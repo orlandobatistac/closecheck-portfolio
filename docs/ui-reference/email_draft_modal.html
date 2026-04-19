@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CloseCheck — Email Draft Modal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:           #ffffff;
+    --bg-secondary: #f7f7f5;
+    --bg-tertiary:  #f0efe9;
+    --text-primary:   #1a1a18;
+    --text-secondary: #5f5e5a;
+    --text-tertiary:  #888780;
+    --border:    rgba(0,0,0,0.10);
+    --border-md: rgba(0,0,0,0.18);
+    --border-hi: rgba(0,0,0,0.30);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+  }
+
+  body {
+    font-family: 'Sora', sans-serif;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 32px 16px;
+  }
+
+  .shell {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 720px;
+    overflow: hidden;
+    box-shadow: 0 2px 24px rgba(0,0,0,0.07);
+  }
+
+  /* Topbar */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 24px;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .logo {
+    font-size: 13px; font-weight: 500;
+    letter-spacing: .08em; text-transform: uppercase;
+    color: var(--text-secondary);
+  }
+
+  .conflict-pill {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 500;
+    padding: 4px 12px; border-radius: 20px;
+    background: #FCEBEB; color: #A32D2D; border: 0.5px solid #F09595;
+  }
+
+  .cdot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: currentColor; flex-shrink: 0;
+  }
+
+  /* Context bar */
+  .context-bar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 24px;
+    border-bottom: 0.5px solid var(--border);
+    background: var(--bg-secondary);
+    flex-wrap: wrap;
+  }
+
+  .ctx-item { display: flex; flex-direction: column; gap: 2px; }
+
+  .ctx-label {
+    font-size: 10px; font-weight: 500;
+    letter-spacing: .08em; text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+
+  .ctx-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px; color: var(--text-primary);
+  }
+
+  .ctx-val.danger { color: #A32D2D; }
+
+  .ctx-sep {
+    width: 0.5px; height: 28px;
+    background: var(--border); flex-shrink: 0;
+  }
+
+  /* Variant tabs */
+  .variant-tabs {
+    display: flex; gap: 8px;
+    padding: 16px 24px 0;
+  }
+
+  .vtab {
+    font-size: 12px; font-weight: 500;
+    padding: 8px 16px; border-radius: var(--radius-md);
+    border: 0.5px solid var(--border);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all .12s;
+    font-family: 'Sora', sans-serif;
+  }
+
+  .vtab:hover { border-color: var(--border-md); }
+
+  .vtab.active {
+    background: var(--bg);
+    color: var(--text-primary);
+    border-color: var(--border-md);
+  }
+
+  .vtab-urgent.active {
+    border-color: #F09595;
+    color: #A32D2D;
+    background: #FCEBEB;
+  }
+
+  /* Email pane */
+  .email-pane { padding: 16px 24px 0; }
+
+  .tone-tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 10px; font-weight: 500;
+    padding: 3px 10px; border-radius: 20px;
+    margin-bottom: 10px;
+  }
+
+  .tone-pro {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border: 0.5px solid var(--border);
+  }
+
+  .tone-urg {
+    background: #FCEBEB;
+    color: #A32D2D;
+    border: 0.5px solid #F09595;
+  }
+
+  .subject-row {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .field-label {
+    font-size: 10px; font-weight: 500;
+    letter-spacing: .08em; text-transform: uppercase;
+    color: var(--text-tertiary); white-space: nowrap;
+  }
+
+  .subject-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px; color: var(--text-primary); flex: 1;
+    background: var(--bg-secondary);
+    padding: 6px 10px;
+    border-radius: var(--radius-md);
+    border: 0.5px solid var(--border);
+  }
+
+  .subject-val.urgent-subj {
+    color: #A32D2D;
+    background: #FCEBEB;
+    border-color: #F09595;
+  }
+
+  .email-body {
+    width: 100%; min-height: 240px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px; line-height: 1.7;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 14px; resize: vertical; outline: none;
+    transition: border-color .12s;
+  }
+
+  .email-body:focus { border-color: var(--border-hi); }
+
+  .char-count {
+    font-size: 10px; color: var(--text-tertiary);
+    font-family: 'DM Mono', monospace;
+    text-align: right; margin-top: 4px;
+  }
+
+  /* Bottom actions */
+  .bottom-actions {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    border-top: 0.5px solid var(--border);
+    margin-top: 14px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .note-bar {
+    font-size: 11px; color: var(--text-tertiary);
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .note-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: #EF9F27; flex-shrink: 0;
+  }
+
+  .btn-group { display: flex; gap: 8px; }
+
+  .btn-outline {
+    font-size: 12px; font-weight: 500;
+    padding: 8px 16px; border-radius: 20px;
+    border: 0.5px solid var(--border-md);
+    background: transparent; color: var(--text-secondary);
+    cursor: pointer; font-family: 'Sora', sans-serif;
+    transition: background .12s, color .12s, border-color .12s;
+  }
+
+  .btn-outline:hover { background: var(--bg-secondary); }
+
+  .btn-outline.copied {
+    color: #3B6D11;
+    border-color: #C0DD97;
+    background: #EAF3DE;
+  }
+
+  .btn-primary {
+    font-size: 12px; font-weight: 500;
+    padding: 8px 18px; border-radius: 20px;
+    border: none;
+    background: var(--text-primary);
+    color: var(--bg);
+    cursor: pointer; font-family: 'Sora', sans-serif;
+    transition: opacity .12s;
+  }
+
+  .btn-primary:hover { opacity: .85; }
+  .btn-primary.urgent { background: #A32D2D; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <div class="topbar">
+    <span class="logo">CloseCheck</span>
+    <div class="conflict-pill">
+      <span class="cdot"></span>
+      Price mismatch — PA-003
+    </div>
+  </div>
+
+  <div class="context-bar">
+    <div class="ctx-item">
+      <span class="ctx-label">File</span>
+      <span class="ctx-val">Martinez_4521_OakLane</span>
+    </div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item">
+      <span class="ctx-label">Recipient</span>
+      <span class="ctx-val">Lender — closing dept.</span>
+    </div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item">
+      <span class="ctx-label">Discrepancy</span>
+      <span class="ctx-val danger">$2,500</span>
+    </div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item">
+      <span class="ctx-label">Closing date</span>
+      <span class="ctx-val">Apr 25, 2026</span>
+    </div>
+  </div>
+
+  <div class="variant-tabs">
+    <button class="vtab active" id="tab-pro" onclick="switchVariant('pro')">Professional &amp; direct</button>
+    <button class="vtab vtab-urgent" id="tab-urg" onclick="switchVariant('urg')">Urgent — closing at risk</button>
+  </div>
+
+  <div class="email-pane">
+
+    <!-- Professional variant -->
+    <div id="pane-pro">
+      <div style="margin: 14px 0 10px;">
+        <span class="tone-tag tone-pro">Normal lender relationship · gives space to respond</span>
+      </div>
+      <div class="subject-row">
+        <span class="field-label">Subject</span>
+        <span class="subject-val" id="subj-pro">Corrected closing disclosure needed — Martinez / 4521 Oak Lane / closing Apr 25</span>
+      </div>
+      <textarea class="email-body" id="body-pro" oninput="updateCount('pro')">Hi [Lender Contact Name],
+
+I'm reaching out regarding the Martinez file for 4521 Oak Lane, scheduled to close on April 25, 2026.
+
+Our pre-close review identified a discrepancy between the executed purchase contract and the closing disclosure we received:
+
+  • Purchase contract (executed):  $385,000
+  • Closing disclosure (received):  $387,500
+  • Difference:                     $2,500
+
+We are unable to schedule the closing appointment until this is resolved. Could you please do one of the following at your earliest convenience?
+
+  1. Issue a corrected closing disclosure reflecting the contract purchase price of $385,000, or
+  2. Provide written confirmation that the $2,500 difference reflects an approved amendment, along with supporting documentation.
+
+Please let me know if you need anything from our side to move this forward. We'd like to have this resolved by end of day to stay on track for the April 25 closing.
+
+Thank you,
+[Your Name]
+[Your Title]
+Galbreath Costner
+[Phone] | [Email]</textarea>
+      <p class="char-count" id="count-pro"></p>
+    </div>
+
+    <!-- Urgent variant -->
+    <div id="pane-urg" style="display:none;">
+      <div style="margin: 14px 0 10px;">
+        <span class="tone-tag tone-urg">Hard deadline · documents closing risk</span>
+      </div>
+      <div class="subject-row">
+        <span class="field-label">Subject</span>
+        <span class="subject-val urgent-subj" id="subj-urg">URGENT: Closing disclosure correction required — Martinez / Apr 25 closing at risk</span>
+      </div>
+      <textarea class="email-body" id="body-urg" oninput="updateCount('urg')">Hi [Lender Contact Name],
+
+I need your urgent attention on the Martinez file — 4521 Oak Lane, closing April 25, 2026.
+
+We cannot proceed to closing with the current figures. There is a $2,500 discrepancy between the purchase contract ($385,000) and the closing disclosure we have on file ($387,500).
+
+This is a hard blocker. Title will not prepare final HUD figures until the closing disclosure is corrected or the variance is documented as an approved amendment.
+
+What we need from you today:
+
+  • A corrected CD at $385,000, OR
+  • Written confirmation + documentation of an approved amendment for the $2,500 difference
+
+If we do not receive a resolution by 3:00 PM today, we will need to evaluate whether the April 25 closing date is viable and notify all parties accordingly.
+
+Please call me directly if it's faster: [Your Phone].
+
+Thank you,
+[Your Name]
+Galbreath Costner</textarea>
+      <p class="char-count" id="count-urg"></p>
+    </div>
+
+  </div>
+
+  <div class="bottom-actions">
+    <span class="note-bar">
+      <span class="note-dot"></span>
+      Both paths documented — corrected CD or written confirmation
+    </span>
+    <div class="btn-group">
+      <button class="btn-outline" id="copy-btn" onclick="copyEmail()">Copy email</button>
+      <button class="btn-primary" id="send-btn" onclick="openMail()">Open in Mail →</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  var active = 'pro';
+
+  function switchVariant(v) {
+    active = v;
+    document.getElementById('pane-pro').style.display = v === 'pro' ? 'block' : 'none';
+    document.getElementById('pane-urg').style.display = v === 'urg' ? 'block' : 'none';
+    document.getElementById('tab-pro').classList.toggle('active', v === 'pro');
+    document.getElementById('tab-urg').classList.toggle('active', v === 'urg');
+    var btn = document.getElementById('send-btn');
+    btn.className = v === 'urg' ? 'btn-primary urgent' : 'btn-primary';
+    updateCount(v);
+  }
+
+  function updateCount(v) {
+    var el = document.getElementById('body-' + v);
+    var cnt = document.getElementById('count-' + v);
+    if (el && cnt) cnt.textContent = el.value.length + ' chars';
+  }
+
+  function copyEmail() {
+    var subj = document.getElementById('subj-' + active).textContent;
+    var body = document.getElementById('body-' + active).value;
+    var text = 'Subject: ' + subj + '\n\n' + body;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).catch(function() {});
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    var btn = document.getElementById('copy-btn');
+    btn.textContent = 'Copied ✓';
+    btn.classList.add('copied');
+    setTimeout(function() {
+      btn.textContent = 'Copy email';
+      btn.classList.remove('copied');
+    }, 2000);
+  }
+
+  function openMail() {
+    var subj = encodeURIComponent(document.getElementById('subj-' + active).textContent);
+    var body = encodeURIComponent(document.getElementById('body-' + active).value);
+    window.location.href = 'mailto:?subject=' + subj + '&body=' + body;
+  }
+
+  updateCount('pro');
+  updateCount('urg');
+</script>
+
+</body>
+</html>

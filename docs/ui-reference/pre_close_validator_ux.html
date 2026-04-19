@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CloseCheck — AI Pre-Close File Validator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --bg-secondary: #f7f7f5;
+    --bg-tertiary: #f0efe9;
+    --text-primary: #1a1a18;
+    --text-secondary: #5f5e5a;
+    --text-tertiary: #888780;
+    --border: rgba(0,0,0,0.1);
+    --border-md: rgba(0,0,0,0.18);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+  }
+
+  body {
+    font-family: 'Sora', sans-serif;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 32px 16px;
+  }
+
+  .app {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 720px;
+    overflow: hidden;
+    box-shadow: 0 2px 24px rgba(0,0,0,0.07);
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .logo {
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+  }
+
+  .file-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-tertiary);
+    background: var(--bg-secondary);
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 0.5px solid var(--border);
+  }
+
+  .tabs {
+    display: flex;
+    border-bottom: 0.5px solid var(--border);
+    padding: 0 24px;
+  }
+
+  .tab {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 10px 0;
+    margin-right: 20px;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .tab.active {
+    color: var(--text-primary);
+    border-bottom-color: var(--text-primary);
+  }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* Triage hero */
+  .triage-hero {
+    padding: 28px 24px;
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 16px;
+    border-radius: 40px;
+    font-size: 13px;
+    font-weight: 500;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .status-amber { background: #FAEEDA; color: #854F0B; border: 0.5px solid #FAC775; }
+  .status-green { background: #EAF3DE; color: #3B6D11; border: 0.5px solid #C0DD97; }
+  .status-red   { background: #FCEBEB; color: #A32D2D; border: 0.5px solid #F09595; }
+
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+  .brief-block { flex: 1; }
+
+  .brief-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: 10px;
+  }
+
+  .brief-lines { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+
+  .brief-lines li {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text-secondary);
+    padding-left: 14px;
+    position: relative;
+  }
+
+  .brief-lines li::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 8px;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--text-tertiary);
+  }
+
+  .brief-lines li.flagged { color: #854F0B; }
+  .brief-lines li.flagged::before { background: #EF9F27; }
+
+  /* Section label */
+  .section-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    padding: 20px 24px 10px;
+  }
+
+  /* Conflict cards */
+  .conflicts-section { padding: 0 24px 24px; }
+
+  .conflict-card {
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    margin-bottom: 8px;
+    overflow: hidden;
+    background: var(--bg);
+    transition: border-color 0.15s;
+  }
+
+  .conflict-card:hover { border-color: var(--border-md); }
+
+  .conflict-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+    border-bottom: 0.5px solid var(--border);
+    background: var(--bg-secondary);
+  }
+
+  .conflict-type { font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
+
+  .severity-tag {
+    font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 500; margin-left: auto;
+  }
+  .sev-high { background: #FCEBEB; color: #A32D2D; }
+  .sev-med  { background: #FAEEDA; color: #854F0B; }
+
+  .conflict-body {
+    padding: 12px 14px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .conflict-side { display: flex; flex-direction: column; gap: 3px; }
+
+  .conflict-source {
+    font-size: 10px; font-weight: 500; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--text-tertiary);
+  }
+
+  .conflict-value { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text-primary); }
+  .conflict-value.mismatch {
+    color: #A32D2D; background: #FCEBEB;
+    padding: 3px 7px; border-radius: 4px; display: inline-block;
+  }
+  .conflict-value.ok-val { color: #3B6D11; }
+
+  .conflict-divider { font-size: 16px; color: var(--text-tertiary); text-align: center; }
+
+  .conflict-actions {
+    display: flex; gap: 6px; padding: 8px 14px;
+    border-top: 0.5px solid var(--border);
+  }
+
+  .btn-sm {
+    font-size: 11px; font-weight: 500; padding: 5px 12px;
+    border-radius: 20px; border: 0.5px solid var(--border-md);
+    background: transparent; color: var(--text-secondary);
+    cursor: pointer; font-family: 'Sora', sans-serif;
+    transition: background 0.12s;
+  }
+  .btn-sm:hover { background: var(--bg-secondary); }
+  .btn-sm.resolved { background: #EAF3DE; color: #3B6D11; border-color: #C0DD97; }
+  .btn-escalate { color: #A32D2D; border-color: #F09595; }
+  .btn-escalate:hover { background: #FCEBEB; }
+
+  /* Doc grid */
+  .doc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+    padding: 0 24px 24px;
+  }
+
+  .doc-chip {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 12px; border-radius: var(--radius-md);
+    border: 0.5px solid var(--border); font-size: 12px;
+    color: var(--text-secondary); background: var(--bg);
+    transition: border-color 0.12s;
+  }
+  .doc-chip:hover { border-color: var(--border-md); }
+
+  .doc-icon {
+    width: 20px; height: 20px; border-radius: 3px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 500; font-family: 'DM Mono', monospace;
+  }
+  .doc-ok   { background: #EAF3DE; color: #3B6D11; }
+  .doc-warn { background: #FAEEDA; color: #854F0B; }
+  .doc-err  { background: #FCEBEB; color: #A32D2D; }
+
+  .status-dot-sm { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-left: auto; }
+  .dot-ok   { background: #639922; }
+  .dot-warn { background: #EF9F27; }
+  .dot-err  { background: #E24B4A; }
+
+  /* Drop zone */
+  .drop-zone {
+    border: 1.5px dashed var(--border-md);
+    border-radius: var(--radius-lg);
+    padding: 48px 24px;
+    margin: 24px;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    cursor: pointer; transition: border-color 0.15s, background 0.15s;
+  }
+  .drop-zone:hover { border-color: var(--text-tertiary); background: var(--bg-secondary); }
+
+  .drop-icon {
+    width: 44px; height: 44px; border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-tertiary);
+  }
+
+  .drop-text { font-size: 14px; color: var(--text-secondary); text-align: center; font-weight: 500; }
+  .drop-sub  { font-size: 12px; color: var(--text-tertiary); }
+
+  /* Bottom bar */
+  .bottom-bar {
+    border-top: 0.5px solid var(--border);
+    padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px;
+  }
+
+  .next-step { font-size: 12px; color: var(--text-secondary); }
+  .next-step strong { color: var(--text-primary); font-weight: 500; }
+
+  .btn-primary {
+    font-size: 12px; font-weight: 500; padding: 8px 18px;
+    border-radius: 20px; border: none;
+    background: var(--text-primary); color: var(--bg);
+    cursor: pointer; font-family: 'Sora', sans-serif;
+    white-space: nowrap;
+    transition: opacity 0.12s;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+
+  /* Scan overlay */
+  .scan-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(255,255,255,0.96);
+    z-index: 100;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+  .scan-overlay.active { display: flex; }
+
+  .scan-ring {
+    width: 48px; height: 48px; border-radius: 50%;
+    border: 2px solid #e0dfd8;
+    border-top-color: var(--text-primary);
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .scan-label { font-size: 14px; color: var(--text-secondary); font-weight: 500; }
+  .scan-sub { font-size: 12px; color: var(--text-tertiary); font-family: 'DM Mono', monospace; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="topbar">
+    <span class="logo">CloseCheck</span>
+    <span class="file-badge">Martinez_4521_OakLane.zip</span>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('result')">Result</div>
+    <div class="tab" onclick="switchTab('docs')">Documents</div>
+    <div class="tab" onclick="switchTab('upload')">New file</div>
+  </div>
+
+  <!-- RESULT TAB -->
+  <div class="view active" id="tab-result">
+
+    <div class="triage-hero">
+      <div class="status-pill status-amber">
+        <span class="dot"></span>
+        Needs review
+      </div>
+      <div class="brief-block">
+        <p class="brief-label">Executive brief</p>
+        <ul class="brief-lines">
+          <li>Buyer name inconsistency between contract and lender commitment letter.</li>
+          <li class="flagged">Purchase price on closing disclosure ($387,500) does not match contract ($385,000).</li>
+          <li>Title insurance binder confirmed. No liens detected.</li>
+          <li>Builder invoice missing — required for construction addendum.</li>
+          <li>2 items require closing coordinator review before scheduling.</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="section-label">Conflicts detected — 2 of 7 docs</p>
+
+    <div class="conflicts-section">
+
+      <div class="conflict-card">
+        <div class="conflict-header">
+          <span class="conflict-type">Price mismatch</span>
+          <span class="severity-tag sev-high">High</span>
+        </div>
+        <div class="conflict-body">
+          <div class="conflict-side">
+            <span class="conflict-source">Purchase contract</span>
+            <span class="conflict-value ok-val">$385,000</span>
+          </div>
+          <div class="conflict-divider">≠</div>
+          <div class="conflict-side">
+            <span class="conflict-source">Closing disclosure</span>
+            <span class="conflict-value mismatch">$387,500</span>
+          </div>
+        </div>
+        <div class="conflict-actions">
+          <button class="btn-sm" onclick="toggleResolved(this)">Mark resolved</button>
+          <button class="btn-sm btn-escalate">Escalate</button>
+        </div>
+      </div>
+
+      <div class="conflict-card">
+        <div class="conflict-header">
+          <span class="conflict-type">Buyer name — spelling</span>
+          <span class="severity-tag sev-med">Medium</span>
+        </div>
+        <div class="conflict-body">
+          <div class="conflict-side">
+            <span class="conflict-source">Purchase contract</span>
+            <span class="conflict-value ok-val">Carlos Martinez</span>
+          </div>
+          <div class="conflict-divider">≠</div>
+          <div class="conflict-side">
+            <span class="conflict-source">Lender commitment</span>
+            <span class="conflict-value mismatch">Carlos Martínez</span>
+          </div>
+        </div>
+        <div class="conflict-actions">
+          <button class="btn-sm" onclick="toggleResolved(this)">Mark resolved</button>
+          <button class="btn-sm btn-escalate">Escalate</button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="bottom-bar">
+      <span class="next-step"><strong>Suggested:</strong> contact lender to confirm closing figures</span>
+      <button class="btn-primary">Generate action plan →</button>
+    </div>
+
+  </div>
+
+  <!-- DOCS TAB -->
+  <div class="view" id="tab-docs">
+    <p class="section-label">Documents processed — 7 files</p>
+    <div class="doc-grid">
+      <div class="doc-chip"><div class="doc-icon doc-ok">PDF</div>Purchase contract<span class="status-dot-sm dot-ok"></span></div>
+      <div class="doc-chip"><div class="doc-icon doc-warn">PDF</div>Closing disclosure<span class="status-dot-sm dot-warn"></span></div>
+      <div class="doc-chip"><div class="doc-icon doc-ok">PDF</div>Title binder<span class="status-dot-sm dot-ok"></span></div>
+      <div class="doc-chip"><div class="doc-icon doc-warn">PDF</div>Lender commitment<span class="status-dot-sm dot-warn"></span></div>
+      <div class="doc-chip"><div class="doc-icon doc-ok">PDF</div>Seller disclosure<span class="status-dot-sm dot-ok"></span></div>
+      <div class="doc-chip"><div class="doc-icon doc-ok">PDF</div>Survey<span class="status-dot-sm dot-ok"></span></div>
+      <div class="doc-chip"><div class="doc-icon doc-err">—</div>Builder invoice<span class="status-dot-sm dot-err"></span></div>
+    </div>
+  </div>
+
+  <!-- UPLOAD TAB -->
+  <div class="view" id="tab-upload">
+    <div class="drop-zone" onclick="startScan()">
+      <div class="drop-icon">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+          <path d="M11 3v12M7 7l4-4 4 4M3 16h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <p class="drop-text">Drop the closing file folder here</p>
+      <p class="drop-sub">PDF, DOCX, TIFF — any format accepted</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- Scan overlay -->
+<div class="scan-overlay" id="scan-overlay">
+  <div class="scan-ring"></div>
+  <p class="scan-label">Reviewing file…</p>
+  <p class="scan-sub" id="scan-step">Ingesting documents</p>
+</div>
+
+<script>
+  function switchTab(name) {
+    document.querySelectorAll('.tab').forEach((t, i) => {
+      const ids = ['result', 'docs', 'upload'];
+      t.classList.toggle('active', ids[i] === name);
+    });
+    document.querySelectorAll('.view').forEach(v => {
+      v.classList.toggle('active', v.id === 'tab-' + name);
+    });
+  }
+
+  function toggleResolved(btn) {
+    const isResolved = btn.classList.toggle('resolved');
+    btn.textContent = isResolved ? 'Done ✓' : 'Mark resolved';
+  }
+
+  function startScan() {
+    const overlay = document.getElementById('scan-overlay');
+    overlay.classList.add('active');
+    const steps = [
+      'Ingesting documents',
+      'Running OCR…',
+      'Extracting key fields…',
+      'Cross-referencing docs…',
+      'Generating executive brief…'
+    ];
+    let i = 0;
+    const el = document.getElementById('scan-step');
+    const iv = setInterval(() => {
+      i++;
+      if (i < steps.length) {
+        el.textContent = steps[i];
+      } else {
+        clearInterval(iv);
+        overlay.classList.remove('active');
+        switchTab('result');
+      }
+    }, 900);
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #ffffff;
+  --bg-secondary: #f7f7f5;
+  --bg-tertiary: #f0efe9;
+  --text-primary: #1a1a18;
+  --text-secondary: #5f5e5a;
+  --text-tertiary: #888780;
+  --border: rgba(0, 0, 0, 0.10);
+  --border-md: rgba(0, 0, 0, 0.18);
+  --border-hi: rgba(0, 0, 0, 0.30);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-family: 'Sora', sans-serif;
+  min-height: 100vh;
+}
+
+@layer components {
+  .cc-card {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 24px rgba(0, 0, 0, 0.07);
+  }
+
+  .cc-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .cc-logo {
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+  }
+
+  .cc-file-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-tertiary);
+    background: var(--bg-secondary);
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 0.5px solid var(--border);
+  }
+
+  .cc-section-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+
+  .cc-btn-sm {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 0.5px solid var(--border-md);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: 'Sora', sans-serif;
+    transition: background 0.12s;
+    white-space: nowrap;
+  }
+
+  .cc-btn-sm:hover {
+    background: var(--bg-secondary);
+  }
+
+  .cc-btn-primary {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 8px 18px;
+    border-radius: 20px;
+    border: none;
+    background: var(--text-primary);
+    color: var(--bg);
+    cursor: pointer;
+    font-family: 'Sora', sans-serif;
+    white-space: nowrap;
+    transition: opacity 0.12s;
+  }
+
+  .cc-btn-primary:hover {
+    opacity: 0.85;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .cc-spinner {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2px solid rgba(0, 0, 0, 0.10);
+    border-top-color: #1a1a18;
+    animation: spin 1s linear infinite;
+  }
+}

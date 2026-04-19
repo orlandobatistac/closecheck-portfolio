@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CloseCheck — Martinez Action Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:           #ffffff;
+    --bg-secondary: #f7f7f5;
+    --bg-tertiary:  #f0efe9;
+    --text-primary:   #1a1a18;
+    --text-secondary: #5f5e5a;
+    --text-tertiary:  #888780;
+    --border:    rgba(0,0,0,0.10);
+    --border-md: rgba(0,0,0,0.18);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+  }
+
+  body {
+    font-family: 'Sora', sans-serif;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 32px 16px;
+  }
+
+  .card {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 680px;
+    overflow: hidden;
+    box-shadow: 0 2px 24px rgba(0,0,0,0.07);
+    padding: 24px;
+  }
+
+  /* File row */
+  .file-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+
+  .file-id {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text-tertiary);
+  }
+
+  .triage-badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: #FAEEDA;
+    color: #854F0B;
+    border: 0.5px solid #FAC775;
+  }
+
+  /* Meta cards */
+  .meta-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .meta-card {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    padding: 12px;
+  }
+
+  .meta-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: 4px;
+  }
+
+  .meta-val {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .meta-val.danger { color: #A32D2D; }
+
+  /* Section label */
+  .section-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: 12px;
+  }
+
+  /* Blocker box */
+  .blocker-box {
+    border: 0.5px solid #F09595;
+    border-radius: var(--radius-lg);
+    background: #FCEBEB;
+    padding: 14px;
+    margin-bottom: 28px;
+  }
+
+  .blocker-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #A32D2D;
+    margin-bottom: 8px;
+  }
+
+  .blocker-item {
+    font-size: 12px;
+    color: #791F1F;
+    line-height: 1.6;
+    padding-left: 12px;
+    position: relative;
+    margin-bottom: 4px;
+  }
+
+  .blocker-item:last-child { margin-bottom: 0; }
+
+  .blocker-item::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 7px;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: #E24B4A;
+  }
+
+  /* Action list */
+  .action-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 28px;
+  }
+
+  .action-item {
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--bg);
+    overflow: hidden;
+    transition: border-color 0.12s;
+  }
+
+  .action-item:hover { border-color: var(--border-md); }
+
+  .action-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+  }
+
+  .step-num {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 500;
+    flex-shrink: 0;
+  }
+
+  .num-red   { background: #FCEBEB; color: #A32D2D; }
+  .num-amber { background: #FAEEDA; color: #854F0B; }
+  .num-gray  { background: var(--bg-secondary); color: var(--text-secondary); }
+
+  .action-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    flex: 1;
+  }
+
+  .urgency-tag {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+
+  .urg-now   { background: #FCEBEB; color: #A32D2D; }
+  .urg-today { background: #FAEEDA; color: #854F0B; }
+  .urg-soon  { background: var(--bg-secondary); color: var(--text-secondary); }
+
+  .action-body {
+    padding: 10px 14px 13px 48px;
+    border-top: 0.5px solid var(--border);
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .who-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+
+  .who-chip {
+    font-size: 10px;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    padding: 2px 8px;
+    border-radius: 20px;
+    border: 0.5px solid var(--border);
+  }
+
+  .done-btn {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 0.5px solid var(--border-md);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    margin-left: auto;
+    font-family: 'Sora', sans-serif;
+    transition: background 0.12s, color 0.12s;
+  }
+
+  .done-btn:hover { background: var(--bg-secondary); }
+
+  .done-btn.completed {
+    background: #EAF3DE;
+    color: #3B6D11;
+    border-color: #C0DD97;
+  }
+
+  /* Bottom row */
+  .bottom-row {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 8px;
+    border-top: 0.5px solid var(--border);
+  }
+
+  .progress-area { flex: 1; }
+
+  .progress-label {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-bottom: 6px;
+  }
+
+  .progress-track {
+    height: 4px;
+    background: var(--bg-secondary);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 4px;
+    background: #639922;
+    border-radius: 4px;
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+
+  .export-btn {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: none;
+    background: var(--text-primary);
+    color: var(--bg);
+    cursor: pointer;
+    font-family: 'Sora', sans-serif;
+    white-space: nowrap;
+    transition: opacity 0.12s;
+  }
+
+  .export-btn:hover { opacity: 0.85; }
+</style>
+</head>
+<body>
+
+<div class="card">
+
+  <div class="file-row">
+    <span class="file-id">Martinez_4521_OakLane — Action Plan</span>
+    <span class="triage-badge">Needs review</span>
+  </div>
+
+  <div class="meta-row">
+    <div class="meta-card">
+      <p class="meta-label">Conflicts</p>
+      <p class="meta-val danger">2 open</p>
+    </div>
+    <div class="meta-card">
+      <p class="meta-label">Missing docs</p>
+      <p class="meta-val danger">1</p>
+    </div>
+    <div class="meta-card">
+      <p class="meta-label">Est. resolution</p>
+      <p class="meta-val">2–4 hrs</p>
+    </div>
+    <div class="meta-card">
+      <p class="meta-label">Closing date</p>
+      <p class="meta-val">Apr 25, 2026</p>
+    </div>
+  </div>
+
+  <div class="blocker-box">
+    <p class="blocker-label">Blockers — file cannot close until resolved</p>
+    <p class="blocker-item">Purchase price discrepancy of $2,500 between contract and closing disclosure.</p>
+    <p class="blocker-item">Builder invoice not received — required for construction addendum compliance.</p>
+  </div>
+
+  <p class="section-label">Action steps — in order of priority</p>
+
+  <div class="action-list">
+
+    <div class="action-item">
+      <div class="action-header">
+        <span class="step-num num-red">1</span>
+        <span class="action-title">Contact lender — confirm closing figures</span>
+        <span class="urgency-tag urg-now">Do now</span>
+      </div>
+      <div class="action-body">
+        The closing disclosure shows $387,500 vs. the contract's $385,000. Call the lender's closing department and request a corrected CD or written confirmation that the $2,500 difference is an approved amendment. Do not proceed with scheduling until resolved.
+        <div class="who-row">
+          <span class="who-chip">Coordinator</span>
+          <span class="who-chip">Lender — closing dept.</span>
+          <button class="done-btn" onclick="markDone(this)">Mark done</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="action-item">
+      <div class="action-header">
+        <span class="step-num num-red">2</span>
+        <span class="action-title">Chase builder invoice</span>
+        <span class="urgency-tag urg-now">Do now</span>
+      </div>
+      <div class="action-body">
+        The construction addendum requires a signed builder invoice. Email or call the builder directly. Request PDF delivery today. This document must be in the file before title can prepare the HUD-1 final figures.
+        <div class="who-row">
+          <span class="who-chip">Coordinator</span>
+          <span class="who-chip">Builder / contractor</span>
+          <button class="done-btn" onclick="markDone(this)">Mark done</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="action-item">
+      <div class="action-header">
+        <span class="step-num num-amber">3</span>
+        <span class="action-title">Clarify buyer name spelling</span>
+        <span class="urgency-tag urg-today">Today</span>
+      </div>
+      <div class="action-body">
+        "Carlos Martinez" appears in the contract; the lender commitment reads "Carlos Martínez" (with accent). Verify the legal name on the buyer's government ID. If the accent is correct, request a name correction amendment from the listing agent and notify the lender.
+        <div class="who-row">
+          <span class="who-chip">Coordinator</span>
+          <span class="who-chip">Buyer</span>
+          <span class="who-chip">Listing agent</span>
+          <button class="done-btn" onclick="markDone(this)">Mark done</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="action-item">
+      <div class="action-header">
+        <span class="step-num num-gray">4</span>
+        <span class="action-title">Re-run file validation after corrections</span>
+        <span class="urgency-tag urg-soon">After steps 1–3</span>
+      </div>
+      <div class="action-body">
+        Once the corrected closing disclosure, builder invoice, and name confirmation are received, re-upload the updated file to CloseCheck for a final validation pass. File should return green status before scheduling the closing appointment.
+        <div class="who-row">
+          <span class="who-chip">CloseCheck — auto</span>
+          <button class="done-btn" onclick="markDone(this)">Mark done</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="bottom-row">
+    <div class="progress-area">
+      <p class="progress-label" id="progress-label">0 of 4 steps completed</p>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+    </div>
+    <button class="export-btn">Draft lender email →</button>
+  </div>
+
+</div>
+
+<script>
+  var completed = {};
+  var total = 4;
+
+  function markDone(btn) {
+    var key = btn.closest('.action-item').querySelector('.action-title').textContent;
+    completed[key] = !completed[key];
+    btn.classList.toggle('completed', completed[key]);
+    btn.textContent = completed[key] ? 'Done ✓' : 'Mark done';
+
+    var count = Object.values(completed).filter(Boolean).length;
+    document.getElementById('progress-label').textContent =
+      count + ' of ' + total + ' steps completed';
+    document.getElementById('progress-fill').style.width =
+      Math.round(count / total * 100) + '%';
+  }
+</script>
+
+</body>
+</html>
