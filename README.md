@@ -6,6 +6,15 @@ The product replaces 2–4 hours of manual file review with a 60-second AI audit
 
 ---
 
+## Documentation
+
+- **[README.md](README.md)** — Main overview (this file)
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** — Development setup, code style, testing guidelines
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — Detailed system design, data flows, module breakdown
+- **[docs/PROJECT.md](docs/PROJECT.md)** — Feature spec + rule matrix
+- **[docs/CLAUDE.md](docs/CLAUDE.md)** — Claude Code / Copilot interaction guidelines
+- **[docs/CLAUDE_CODE_PROMPTS.md](docs/CLAUDE_CODE_PROMPTS.md)** — Step-by-step feature implementation guide
+
 ## Tech Stack
 
 | Layer | Technology | Notes |
@@ -80,16 +89,18 @@ docker-compose up --build
 For local development without Docker:
 
 ```bash
-# Backend
-cd backend
-pip install -r requirements.txt
-uvicorn app.main:app --reload        # http://localhost:8000
+# All-in-one (starts both backend + frontend guides)
+make dev
 
-# Frontend (new terminal)
-cd frontend
-npm install
-npm run dev                           # http://localhost:5173
+# Or, run them separately in two terminals:
+# Terminal 1:
+make dev-backend              # http://localhost:8000
+
+# Terminal 2:
+make dev-frontend             # http://localhost:5173
 ```
+
+See [Makefile](Makefile) for the full list of development commands.
 
 ---
 
@@ -181,12 +192,12 @@ Health check: `{ "status": "ok" }`
 ## Running Tests
 
 ```bash
-cd backend
-pytest                              # all tests (mocked, no API key needed)
-pytest -m "not e2e and not requires_claude"   # fast unit + integration only
-pytest -m e2e                       # end-to-end tests (requires ANTHROPIC_API_KEY + sample docs)
-pytest -m requires_claude           # tests that call the real Claude API
+make test                              # all tests (mocked, no API key needed)
+make test-fast                         # fast unit + integration only
+make test-e2e                          # end-to-end tests (requires ANTHROPIC_API_KEY + sample docs)
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for more details on testing and development.
 
 ---
 
