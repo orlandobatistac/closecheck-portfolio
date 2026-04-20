@@ -359,3 +359,28 @@ def _process_job(job_id: str, file_payloads: list[tuple[str, bytes]]) -> None:
             db.commit()
     finally:
         db.close()
+
+
+@router.post("/demo", response_model=JobCreateResponse, status_code=202)
+async def run_demo(
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """Run a validation job using the bundled Martinez sample closing package."""
+    from pathlib import Path as _Path
+    sample_dir = _Path(__file__).parents[4] / "sample-docs" / "Martinez_test"
+    sample_files = sorted(sample_dir.glob("*.pdf"))
+    if not sample_files:
+        raise HTTPException(status_code=500, detail="Sample demo files not found on server")
+    job = ValidationJob(
+        id=str(uuid.uuid4()),
+        status=JobStatus.PENDING,
+        transaction_type="residential",
+        file_count=len(sample_files),
+    )
+    db.add(job)
+    db.commit()
+    db.refresh(job)
+    file_payloads = [(f.name, f.read_bytes()) for f in sample_files]
+    background_tasks.add_task(_process_job, job.id, file_payloads)
+    return JobCreateResponse(job_id=job.id, status=job.status, created_at=job.created_at)

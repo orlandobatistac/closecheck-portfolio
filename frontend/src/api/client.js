@@ -48,4 +48,9 @@ export async function draftEmail(jobId, conflictRuleId, recipient = 'lender') {
   return data
 }
 
+export async function submitDemo() {
+  const { data } = await api.post('/api/v1/demo')
+  return data
+}
+
 export default api
