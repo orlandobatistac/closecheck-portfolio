@@ -2,9 +2,10 @@ import uuid
 from datetime import datetime
 from typing import List
 
-from fastapi import APIRouter, BackgroundTasks, Body, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, File, Form, HTTPException, Request, UploadFile
 from sqlalchemy.orm import Session
 
+from app.api.deps.rate_limit import check_demo_rate_limit, record_rate_limit_entry
 from app.config import settings
 from app.db.database import get_db
 from app.models.job import JobStatus, ValidationJob
@@ -62,6 +63,7 @@ ALLOWED_CONTENT_TYPES = {
 
 @router.post("/validate", response_model=JobCreateResponse, status_code=202)
 async def validate_files(
+    request: Request,
     background_tasks: BackgroundTasks,
     files: List[UploadFile] = File(...),
     transaction_type: str = Form(default="residential"),
@@ -77,6 +79,8 @@ async def validate_files(
 
     if len(files) > settings.max_files_per_job:
         raise HTTPException(400, f"Maximum {settings.max_files_per_job} files per job")
+
+    check_demo_rate_limit(request, file_count=len(files), db=db)
 
     for f in files:
         if f.content_type not in ALLOWED_CONTENT_TYPES:
@@ -96,6 +100,8 @@ async def validate_files(
     db.add(job)
     db.commit()
     db.refresh(job)
+
+    record_rate_limit_entry(request, file_count=len(files), db=db)
 
     file_payloads: list[tuple[str, bytes]] = []
     for f in files:
@@ -141,6 +147,7 @@ def get_results(job_id: str, db: Session = Depends(get_db)):
         job_id=job.id,
         status=job.status,
         overall=job.overall,
+        error_message=job.error_message,
         created_at=job.created_at,
         completed_at=job.completed_at,
         documents=documents,
@@ -184,6 +191,7 @@ def draft_email(
                 recipient=body.recipient,
             ),
             max_tokens=1024,
+            model="claude-haiku-4-5",
         )
         conflict_type = conflict.get("type", "Issue")
         return EmailDraftResponse(
@@ -340,7 +348,29 @@ def _process_job(job_id: str, file_payloads: list[tuple[str, bytes]]) -> None:
         # Phase 5: build report
         t0 = time.perf_counter()
         all_results = rule_results + consistency_results
-        report = build_report(all_results, fields_by_doc=fields, classifications=classifications)
+
+        # Build page_texts_by_doc: doc_type → list[str] (one string per page).
+        # Only native PDFs carry page_texts; OCR docs have an empty list.
+        page_texts_by_doc: dict[str, list[str]] = {}
+        for fname, info in classifications.items():
+            doc_type = info.get("document_type")
+            if not doc_type or doc_type == "other":
+                continue
+            texts = (
+                parsed_metadata
+                .get(fname, {})
+                .get("metadata", {})
+                .get("page_texts", [])
+            )
+            if texts:
+                page_texts_by_doc[doc_type] = texts
+
+        report = build_report(
+            all_results,
+            fields_by_doc=fields,
+            classifications=classifications,
+            page_texts_by_doc=page_texts_by_doc,
+        )
         save_report(job_id, report)
         logger.info("[%s] Report built in %.2fs", job_id, time.perf_counter() - t0)
 
@@ -363,6 +393,7 @@ def _process_job(job_id: str, file_payloads: list[tuple[str, bytes]]) -> None:
 
 @router.post("/demo", response_model=JobCreateResponse, status_code=202)
 async def run_demo(
+    request: Request,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
@@ -372,6 +403,9 @@ async def run_demo(
     sample_files = sorted(sample_dir.glob("*.pdf"))
     if not sample_files:
         raise HTTPException(status_code=500, detail="Sample demo files not found on server")
+
+    check_demo_rate_limit(request, file_count=len(sample_files), db=db)
+
     job = ValidationJob(
         id=str(uuid.uuid4()),
         status=JobStatus.PENDING,
@@ -381,6 +415,9 @@ async def run_demo(
     db.add(job)
     db.commit()
     db.refresh(job)
+
+    record_rate_limit_entry(request, file_count=len(sample_files), db=db)
+
     file_payloads = [(f.name, f.read_bytes()) for f in sample_files]
     background_tasks.add_task(_process_job, job.id, file_payloads)
     return JobCreateResponse(job_id=job.id, status=job.status, created_at=job.created_at)

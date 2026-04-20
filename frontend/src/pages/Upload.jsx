@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { submitValidation, getResults, submitDemo } from '../api/client'
+import RateLimitToast from '../components/RateLimitToast'
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const ALLOWED_EXTENSIONS = new Set([
@@ -1183,6 +1184,7 @@ function LiveDemoSection() {
   const [view, setView] = useState('idle')
   const [stepIdx, setStepIdx] = useState(0)
   const [errorMsg, setErrorMsg] = useState(null)
+  const [rateLimitMsg, setRateLimitMsg] = useState(null)
   const [demoLoading, setDemoLoading] = useState(false)
   const inputRef = useRef()
   const navigate = useNavigate()
@@ -1216,7 +1218,17 @@ function LiveDemoSection() {
         } else if (data.status === 'failed') {
           clearInterval(stepIvRef.current)
           clearInterval(pollRef.current)
-          setErrorMsg('Validation failed on the server. Please try again.')
+          const raw = data.error_message || ''
+          const zipMatch = raw.match(/ZIP expansion yielded (\d+) files which exceeds the limit of (\d+)/)
+          if (zipMatch) {
+            setErrorMsg(`Too many files — this package has ${zipMatch[1]} files but the limit is ${zipMatch[2]}. Please reduce the number of files and try again.`)
+          } else if (raw.toLowerCase().includes('invalid json') || raw.toLowerCase().includes('cannot be parsed')) {
+            setErrorMsg('The AI service returned an unexpected response. Please try again.')
+          } else if (raw) {
+            setErrorMsg(raw)
+          } else {
+            setErrorMsg('Validation failed on the server. Please try again.')
+          }
           setView('error')
         }
       } catch {
@@ -1237,8 +1249,13 @@ function LiveDemoSection() {
       const result = await submitValidation(files)
       startPolling(result.job_id)
     } catch (err) {
-      setErrorMsg(err.response?.data?.detail || 'Upload failed. Is the API running?')
-      setView('error')
+      if (err.response?.status === 429) {
+        setView('idle')
+        setRateLimitMsg(err.response.data?.detail?.message || 'You\u2019ve reached the demo limit. Please try again later.')
+      } else {
+        setErrorMsg(err.response?.data?.detail || 'Upload failed. Is the API running?')
+        setView('error')
+      }
     }
   }
 
@@ -1253,7 +1270,11 @@ function LiveDemoSection() {
       startPolling(result.job_id)
     } catch (err) {
       setDemoLoading(false)
-      setErrorMsg(err.response?.data?.detail || 'Demo request failed. Is the API running?')
+      if (err.response?.status === 429) {
+        setRateLimitMsg(err.response.data?.detail?.message || 'You\u2019ve reached the demo limit. Please try again later.')
+      } else {
+        setErrorMsg(err.response?.data?.detail || 'Demo request failed. Is the API running?')
+      }
     }
   }
 
@@ -1272,10 +1293,14 @@ function LiveDemoSection() {
   }
 
   return (
-    <section
-      id="demo"
-      style={{ background: '#f7f7f5', padding: '80px 24px 100px' }}
-    >
+    <>
+      {rateLimitMsg && (
+        <RateLimitToast message={rateLimitMsg} onClose={() => setRateLimitMsg(null)} />
+      )}
+      <section
+        id="demo"
+        style={{ background: '#f7f7f5', padding: '80px 24px 100px' }}
+      >
       <div style={{ maxWidth: '720px', margin: '0 auto' }}>
         <span
           style={{
@@ -1646,6 +1671,7 @@ function LiveDemoSection() {
         </div>
       </div>
     </section>
+    </>
   )
 }
 

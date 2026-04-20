@@ -44,4 +44,8 @@ def get_job_file(job_id: str, filename: str, db: Session = Depends(get_db)):
     if not file_path.exists() or not file_path.is_file():
         raise HTTPException(404, f"File '{filename}' not found for job '{job_id}'")
 
-    return FileResponse(path=str(file_path), filename=filename)
+    return FileResponse(
+        path=str(file_path),
+        media_type='application/pdf',
+        content_disposition_type='inline',
+    )

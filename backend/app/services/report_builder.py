@@ -34,10 +34,22 @@ _CROSS_DOC_FIELDS: dict[str, tuple] = {
 }
 
 
+def _find_value_page(page_texts: list[str], value: str) -> int | None:
+    """Return the 1-indexed page number where *value* first appears, or None."""
+    if not value:
+        return None
+    needle = value.strip().lower()
+    for i, text in enumerate(page_texts, start=1):
+        if needle in text.lower():
+            return i
+    return None
+
+
 def build_report(
     rule_results: list[RuleResult],
     fields_by_doc: Optional[dict] = None,
     classifications: Optional[dict] = None,
+    page_texts_by_doc: Optional[dict] = None,
 ) -> dict:
     """
     Aggregate rule results into the full report payload.
@@ -56,7 +68,12 @@ def build_report(
         overall = "PASS"
 
     # Build conflicts array from FAIL / WARNING rules
-    conflicts = _build_conflicts(rule_results, fields_by_doc or {})
+    conflicts = _build_conflicts(
+        rule_results,
+        fields_by_doc or {},
+        classifications or {},
+        page_texts_by_doc or {},
+    )
 
     # Documents list from classifications
     documents = _build_documents(classifications or {}, rule_results)
@@ -95,7 +112,18 @@ def build_report(
 
 # ── conflicts ──────────────────────────────────────────────────────────────────
 
-def _build_conflicts(rule_results: list[RuleResult], fields_by_doc: dict) -> list[dict]:
+def _build_conflicts(
+    rule_results: list[RuleResult],
+    fields_by_doc: dict,
+    classifications: dict,
+    page_texts_by_doc: dict,
+) -> list[dict]:
+    # Map document_type → actual uploaded filename
+    type_to_filename: dict[str, str] = {
+        info["document_type"]: fname
+        for fname, info in classifications.items()
+    }
+
     conflicts = []
     for r in rule_results:
         if r.status not in (RuleStatus.FAIL, RuleStatus.WARNING):
@@ -112,6 +140,10 @@ def _build_conflicts(rule_results: list[RuleResult], fields_by_doc: dict) -> lis
             "value_a": None,
             "doc_b": None,
             "value_b": None,
+            "filename_a": None,
+            "filename_b": None,
+            "page_a": None,
+            "page_b": None,
         }
 
         # Enrich with doc_a / doc_b values if this is a known cross-doc rule
@@ -125,6 +157,19 @@ def _build_conflicts(rule_results: list[RuleResult], fields_by_doc: dict) -> lis
             conflict["value_a"] = str(doc_a_fields.get(fk_a, "")) or None
             conflict["doc_b"] = dt_b.replace("_", " ").title()
             conflict["value_b"] = str(doc_b_fields.get(fk_b, "")) or None
+            conflict["filename_a"] = type_to_filename.get(dt_a)
+            conflict["filename_b"] = type_to_filename.get(dt_b)
+            conflict["page_a"] = _find_value_page(
+                page_texts_by_doc.get(dt_a, []), conflict["value_a"] or ""
+            )
+            conflict["page_b"] = _find_value_page(
+                page_texts_by_doc.get(dt_b, []), conflict["value_b"] or ""
+            )
+        elif r.documents_referenced:
+            # Single-doc issue: resolve filename and show a source chip.
+            dt_a = r.documents_referenced[0]
+            conflict["doc_a"] = dt_a.replace("_", " ").title()
+            conflict["filename_a"] = type_to_filename.get(dt_a)
 
         conflicts.append(conflict)
 

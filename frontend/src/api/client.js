@@ -1,10 +1,25 @@
 import axios from 'axios'
 
+// Persist a stable device token in localStorage so the server can fingerprint
+// this browser session across page reloads and IP changes.
+if (!localStorage.getItem('cc_device_token')) {
+  localStorage.setItem('cc_device_token', crypto.randomUUID())
+}
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
   headers: {
     'X-API-Key': import.meta.env.VITE_API_KEY || 'dev-key',
   },
+})
+
+// Attach the device token to every request so the backend can fingerprint it.
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('cc_device_token')
+  if (token) {
+    config.headers['X-Device-Token'] = token
+  }
+  return config
 })
 
 /**

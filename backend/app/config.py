@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     max_file_size_mb: int = 25
     max_files_per_job: int = 20
     api_key: str = "dev-key"
+    demo_mode: bool = True
+    rate_limit_window_hours: int = 24
+    rate_limit_max_files: int = 20
 
     model_config = {"env_file": ".env", "case_sensitive": False}
 
