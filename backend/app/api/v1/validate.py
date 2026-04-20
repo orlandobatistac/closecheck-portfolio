@@ -19,6 +19,7 @@ from app.services.ingestion import (
     save_classifications,
     save_extracted_texts,
     save_fields,
+    save_parsed_metadata,
     save_report,
     save_uploaded_files,
 )
@@ -26,8 +27,36 @@ from app.services.ingestion import (
 router = APIRouter()
 
 ALLOWED_CONTENT_TYPES = {
+    # Existing
     "application/pdf",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    # Archives
+    "application/zip",
+    "application/x-zip-compressed",
+    "application/x-zip",
+    "application/octet-stream",   # browsers may report ZIP as this
+    # Images
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "image/tiff",
+    "image/webp",
+    "image/bmp",
+    "image/x-bmp",
+    # Web
+    "text/html",
+    "application/xhtml+xml",
+    # Spreadsheets
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.ms-excel",
+    # Delimited text
+    "text/csv",
+    "text/tab-separated-values",
+    # Plain text
+    "text/plain",
+    # JSON
+    "application/json",
+    "text/json",
 }
 
 
@@ -52,7 +81,9 @@ async def validate_files(
         if f.content_type not in ALLOWED_CONTENT_TYPES:
             raise HTTPException(
                 400,
-                f"Unsupported file type for '{f.filename}'. Only PDF and DOCX are allowed.",
+                f"Unsupported content-type '{f.content_type}' for '{f.filename}'. "
+                f"Supported formats: PDF, DOCX, ZIP, images (JPG/PNG/GIF/TIFF/BMP/WebP), "
+                f"HTML, XLSX, CSV, TXT, JSON.",
             )
 
     job = ValidationJob(
@@ -174,7 +205,6 @@ def _process_job(job_id: str, file_payloads: list[tuple[str, bytes]]) -> None:
     from app.services.classifier import classify_document
     from app.services.consistency import run_consistency_checks
     from app.services.extractor import extract_fields
-    from app.services.parser import extract_text
     from app.services.report_builder import build_report
     from app.services.validator import run_all_rules
 
@@ -194,14 +224,70 @@ def _process_job(job_id: str, file_payloads: list[tuple[str, bytes]]) -> None:
         db.commit()
         logger.info("[%s] Job started", job_id)
 
-        # Phase 1: persist + OCR
+        # Phase 1: persist → expand ZIPs → dedup → type-detect → extract
         t0 = time.perf_counter()
-        saved_paths = save_uploaded_files(job_id, file_payloads)
+        from pathlib import Path as _Path
+        from app.services.zip_handler import expand_zips
+        from app.services.file_type_detector import detect_file_type
+        from app.services.deduplication import deduplicate
+        from app.services.extractors import extract_document
+
+        job_dir = _Path(settings.upload_dir) / job_id
+        raw_paths = save_uploaded_files(job_id, file_payloads)
+
+        # Expand any ZIP archives (recursive, ZIP-Slip safe)
+        flat_paths, zip_warnings = expand_zips(raw_paths, job_dir)
+        for w in zip_warnings:
+            logger.warning("[%s] ZIP: %s", job_id, w)
+
+        # Enforce file count limit post-expansion
+        if len(flat_paths) > settings.max_files_per_job:
+            raise ValueError(
+                f"ZIP expansion yielded {len(flat_paths)} files which exceeds the "
+                f"limit of {settings.max_files_per_job} files per job."
+            )
+
+        # Deduplicate by SHA-256
+        flat_paths, dedup_warnings = deduplicate(flat_paths)
+        for w in dedup_warnings:
+            logger.info("[%s] Dedup: %s", job_id, w)
+
+        # Detect type + extract each file; tolerate individual failures
         extracted: dict[str, str] = {}
-        for path in saved_paths:
-            extracted[path.name] = extract_text(path)
+        parsed_metadata: dict[str, dict] = {}
+        all_ingestion_warnings: list[str] = []
+
+        for path in flat_paths:
+            file_type = detect_file_type(path)
+            logger.info("[%s] Detected '%s' → type=%s", job_id, path.name, file_type)
+
+            if file_type == "unknown":
+                all_ingestion_warnings.append(
+                    f"Skipped '{path.name}': file type could not be determined."
+                )
+                continue
+
+            doc = extract_document(path, file_type)
+            extracted[path.name] = doc.text
+            parsed_metadata[path.name] = {
+                "file_type":          doc.file_type,
+                "extraction_method":  doc.extraction_method,
+                "sha256":             doc.sha256,
+                "source_archive":     doc.source_archive,
+                "warnings":           doc.warnings,
+                "metadata":           doc.metadata,
+            }
+            if doc.warnings:
+                for w in doc.warnings:
+                    logger.warning("[%s] %s: %s", job_id, path.name, w)
+
         save_extracted_texts(job_id, extracted)
-        logger.info("[%s] OCR complete in %.2fs (%d files)", job_id, time.perf_counter() - t0, len(extracted))
+        save_parsed_metadata(job_id, parsed_metadata)
+        logger.info(
+            "[%s] Ingestion complete in %.2fs (%d files, %d skipped)",
+            job_id, time.perf_counter() - t0, len(extracted),
+            len(flat_paths) - len(extracted),
+        )
 
         # Phase 2: classify each document
         t0 = time.perf_counter()

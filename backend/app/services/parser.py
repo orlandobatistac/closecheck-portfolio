@@ -1,43 +1,44 @@
 """
-Day 2: File text extraction.
-Supports PDF (via PyMuPDF) and DOCX (via python-docx).
+File text extraction — backward-compatible wrapper around the extractors package.
+
+`extract_text` is kept for compatibility with existing tests and any code that
+calls it directly. New code should use `extract_document` from
+`app.services.extractors` instead.
 """
 from pathlib import Path
 
-import fitz  # PyMuPDF
+from app.services.extractors import extract_document
+from app.services.file_type_detector import detect_file_type
 
 
 def extract_text(file_path: Path) -> str:
-    """Extract raw text from a PDF or DOCX file."""
-    suffix = file_path.suffix.lower()
-    if suffix == ".pdf":
-        return _extract_pdf(file_path)
-    elif suffix == ".docx":
-        return _extract_docx(file_path)
-    else:
-        raise ValueError(f"Unsupported file type: {suffix}")
+    """
+    Extract raw text from *file_path* using the appropriate format extractor.
 
+    Raises ValueError if the file type is unknown/unsupported.
+    """
+    file_type = detect_file_type(file_path)
+    if file_type == "unknown":
+        raise ValueError(
+            f"Unsupported file type for '{file_path.name}'. "
+            "Cannot determine format from magic bytes or extension."
+        )
+    doc = extract_document(file_path, file_type)
+    if doc.extraction_method == "failed" and not doc.text:
+        # Surface the first warning as an exception to preserve original behavior
+        err = doc.warnings[0] if doc.warnings else f"Extraction failed for '{file_path.name}'"
+        raise ValueError(err)
+    return doc.text
+
+
+# ── Keep private helpers for any code that might import them directly ─────────
 
 def _extract_pdf(path: Path) -> str:
-    try:
-        doc = fitz.open(str(path))
-        text = "\n".join(page.get_text() for page in doc)
-        doc.close()
-        return text
-    except fitz.EmptyFileError:
-        raise ValueError(
-            f"Cannot extract text from '{path.name}': the file is empty. "
-            f"Please upload a valid PDF document."
-        )
-    except fitz.FileDataError:
-        raise ValueError(
-            f"Cannot extract text from '{path.name}': the file is corrupted or not a valid PDF. "
-            f"Please verify the file can be opened in a PDF viewer before uploading."
-        )
+    from app.services.extractors.pdf_extractor import PDFExtractor
+    return PDFExtractor().extract(path).text
 
 
 def _extract_docx(path: Path) -> str:
-    from docx import Document
-    doc = Document(str(path))
-    return "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+    from app.services.extractors.docx_extractor import DOCXExtractor
+    return DOCXExtractor().extract(path).text
 

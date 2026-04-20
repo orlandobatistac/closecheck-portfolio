@@ -6,6 +6,7 @@ from app.config import settings
 _EXTRACTED_FILENAME = "extracted.json"
 _CLASSIFICATIONS_FILENAME = "classifications.json"
 _FIELDS_FILENAME = "fields.json"
+_METADATA_FILENAME = "metadata.json"
 
 
 def save_uploaded_files(job_id: str, file_payloads: list[tuple[str, bytes]]) -> list[Path]:
@@ -59,6 +60,19 @@ def save_fields(job_id: str, fields: dict) -> None:
 def load_fields(job_id: str) -> dict:
     """Load extracted fields written by save_fields."""
     return _read_json(job_id, _FIELDS_FILENAME)
+
+
+def save_parsed_metadata(job_id: str, metadata: dict) -> None:
+    """
+    Persist per-file ingestion metadata (file_type, extraction_method, warnings,
+    sha256, source_archive) to uploads/{job_id}/metadata.json.
+    """
+    _write_json(job_id, _METADATA_FILENAME, metadata)
+
+
+def load_parsed_metadata(job_id: str) -> dict:
+    """Load metadata written by save_parsed_metadata."""
+    return _read_json(job_id, _METADATA_FILENAME)
 
 
 # ── internal helpers ───────────────────────────────────────────────────────────

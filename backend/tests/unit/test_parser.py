@@ -73,9 +73,10 @@ def test_extract_pdf(tmp_path):
 
 def test_unsupported_extension(tmp_path):
     from app.services.parser import extract_text
-    bad = tmp_path / "file.txt"
-    bad.write_text("hello")
-    with pytest.raises(ValueError, match="Unsupported file type"):
+    # Use a file whose type cannot be determined (magic bytes + extension both unknown)
+    bad = tmp_path / "file.xyz123unknown"
+    bad.write_bytes(b"\x00\x01\x02\x03 random binary content with no known signature")
+    with pytest.raises(ValueError, match="Unsupported file type|Cannot determine format"):
         extract_text(bad)
 
 
