@@ -1,0 +1,197 @@
+{
+  "transaction": {
+    "property_address": "742 Evergreen Terrace, Charlotte, NC 28201",
+    "parcel": "217-541-09",
+    "buyer_correct": "James R. Mitchell and Sarah L. Mitchell",
+    "buyer_wrong": "Jim Mitchell",
+    "seller": "Robert D. Greenwood and Linda K. Greenwood",
+    "purchase_price_correct": "$342,500.00",
+    "purchase_price_wrong": "$345,000.00",
+    "closing_date_correct": "June 15, 2026",
+    "closing_date_wrong": "July 1, 2026",
+    "seller_credits_correct": "$3,500.00",
+    "seller_credits_wrong": "$5,000.00",
+    "loan_amount": "$314,050.00",
+    "cash_to_close": "$34,892.50",
+    "lender": "Piedmont Mortgage Partners, LLC"
+  },
+  "normal": {
+    "purchase_agreement.pdf": {
+      "type": "purchase_agreement",
+      "issues": []
+    },
+    "closing_disclosure.pdf": {
+      "type": "closing_disclosure",
+      "issues": []
+    },
+    "title_commitment.pdf": {
+      "type": "title_commitment",
+      "issues": []
+    },
+    "loan_note.pdf": {
+      "type": "loan_note",
+      "issues": []
+    },
+    "insurance_binder.pdf": {
+      "type": "insurance_binder",
+      "issues": []
+    },
+    "hoa_certificate.pdf": {
+      "type": "hoa_document",
+      "issues": []
+    },
+    "wire_instructions.txt": {
+      "type": "wire_instructions",
+      "issues": []
+    },
+    "buyer_info.json": {
+      "type": "other",
+      "issues": []
+    },
+    "closing_costs.xlsx": {
+      "type": "other",
+      "issues": []
+    },
+    "settlement_summary.csv": {
+      "type": "other",
+      "issues": []
+    },
+    "property_photo.jpg": {
+      "type": "other",
+      "issues": [],
+      "extraction": "ocr-vision"
+    }
+  },
+  "problematic": {
+    "cd_amended_price_conflict.pdf": {
+      "type": "closing_disclosure",
+      "issues": [
+        "price conflict: $345,000 vs PA $342,500",
+        "credits conflict: $5,000 vs PA $3,500"
+      ],
+      "expected_rules_triggered": [
+        "PA-003",
+        "CD-003"
+      ]
+    },
+    "pa_signed_name_mismatch.docx": {
+      "type": "purchase_agreement",
+      "issues": [
+        "buyer signed as 'Jim Mitchell' vs 'James R. Mitchell'"
+      ],
+      "expected_rules_triggered": [
+        "PA-001"
+      ]
+    },
+    "loan_estimate_date_conflict.pdf": {
+      "type": "other",
+      "issues": [
+        "closing date July 1, 2026 vs PA June 15, 2026"
+      ],
+      "expected_rules_triggered": [
+        "PA-005"
+      ]
+    },
+    "corrupt_inspection_report.pdf": {
+      "type": "other",
+      "issues": [
+        "corrupt PDF \u2014 valid header, invalid content streams"
+      ],
+      "expected_pipeline_behavior": "extraction_method=failed, warning added"
+    },
+    "survey_scan_lowres.jpg": {
+      "type": "survey",
+      "issues": [
+        "low resolution scan, heavy blur \u2014 OCR quality degraded"
+      ],
+      "expected_pipeline_behavior": "extraction_method=ocr-vision"
+    },
+    "title_partial_missing_page.pdf": {
+      "type": "title_commitment",
+      "issues": [
+        "document truncated \u2014 page 2 of 4 missing"
+      ],
+      "expected_pipeline_behavior": "extraction partial, warning added"
+    },
+    "closing_costs_bad_math.xlsx": {
+      "type": "other",
+      "issues": [
+        "TOTAL $5,436.50 does not equal sum of line items $4,186.50 (diff $1,250.00)"
+      ],
+      "expected_rules_triggered": [],
+      "note": "arithmetic error visible in spreadsheet data"
+    },
+    "addendum_empty_fields.docx": {
+      "type": "purchase_agreement",
+      "issues": [
+        "11 unfilled placeholder fields (__________)"
+      ],
+      "expected_pipeline_behavior": "extracted text contains placeholders"
+    },
+    "property_photo_duplicate.jpg": {
+      "type": "other",
+      "issues": [
+        "exact byte-duplicate of normal/property_photo.jpg"
+      ],
+      "expected_pipeline_behavior": "deduplication removes this file",
+      "sha256_matches": "normal/property_photo.jpg"
+    },
+    "hoa_missing_fields.csv": {
+      "type": "hoa_document",
+      "issues": [
+        "6 of 12 fields are blank"
+      ],
+      "expected_pipeline_behavior": "extracted text has empty fields"
+    },
+    "amendment_no_date.txt": {
+      "type": "other",
+      "issues": [
+        "no effective date",
+        "no legal party names"
+      ],
+      "expected_pipeline_behavior": "extraction succeeds, classification likely 'other'"
+    },
+    "lender_data_conflicts.json": {
+      "type": "other",
+      "issues": [
+        "purchase_price=$345,000 conflicts with PA $342,500",
+        "buyer='Jim Mitchell' conflicts with PA buyer name",
+        "closing_date='July 1, 2026' conflicts with PA",
+        "seller_credits=$5,000 conflicts with PA $3,500"
+      ],
+      "expected_rules_triggered": [
+        "PA-001",
+        "PA-003",
+        "PA-005",
+        "CD-003"
+      ]
+    },
+    "inspection_report_scan.png": {
+      "type": "other",
+      "issues": [],
+      "expected_pipeline_behavior": "extraction_method=ocr-vision"
+    }
+  },
+  "archives": {
+    "closing_package_clean.zip": {
+      "description": "All 11 normal/ documents in a flat ZIP",
+      "expected_rules_triggered": [],
+      "expected_file_count_after_expansion": 11
+    },
+    "closing_package_mixed.zip": {
+      "description": "normal/ folder + 6 problematic files in subfolders",
+      "expected_rules_triggered": [
+        "PA-001",
+        "PA-003",
+        "PA-005",
+        "CD-003"
+      ],
+      "expected_file_count_after_expansion": 17
+    },
+    "nested_archive.zip": {
+      "description": "Outer ZIP with inner_package.zip + __MACOSX entries to skip",
+      "expected_pipeline_behavior": "recursive extraction; __MACOSX and .DS_Store skipped",
+      "expected_file_count_after_expansion": 4
+    }
+  }
+}

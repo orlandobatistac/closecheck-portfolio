@@ -1,0 +1,59 @@
+{
+  "transaction_id": "CC-2026-04-7421",
+  "property": {
+    "address": "742 Evergreen Terrace, Charlotte, NC 28201",
+    "parcel": "217-541-09",
+    "legal_description": "Lot 7, Block 12, Pinewood Estates Subdivision, Mecklenburg County, NC",
+    "county": "Mecklenburg",
+    "state": "NC",
+    "zip": "28201"
+  },
+  "buyers": [
+    {
+      "name": "James R. Mitchell",
+      "ssn_last4": "XXXX",
+      "dob": "1982-03-14",
+      "email": "james.mitchell@email.com",
+      "phone": "(704) 555-0241",
+      "id_type": "NC Driver License",
+      "id_number": "NC-****-8841"
+    },
+    {
+      "name": "Sarah L. Mitchell",
+      "ssn_last4": "XXXX",
+      "dob": "1984-07-29",
+      "email": "sarah.mitchell@email.com",
+      "phone": "(704) 555-0242",
+      "id_type": "NC Driver License",
+      "id_number": "NC-****-2217"
+    }
+  ],
+  "sellers": [
+    {
+      "name": "Robert D. Greenwood"
+    },
+    {
+      "name": "Linda K. Greenwood"
+    }
+  ],
+  "financial": {
+    "purchase_price": 342500.0,
+    "loan_amount": 314050.0,
+    "cash_to_close": 34892.5,
+    "seller_credits": 3500.0,
+    "earnest_money": 6850.0,
+    "interest_rate": "6.875%",
+    "closing_date": "June 15, 2026"
+  },
+  "lender": {
+    "name": "Piedmont Mortgage Partners, LLC",
+    "nmls": "1887432",
+    "contact": "David Hartmann",
+    "phone": "(704) 555-0300"
+  },
+  "title_company": {
+    "name": "Carolina Closing Services, Inc.",
+    "contact": "Margaret J. Hollowell",
+    "phone": "(704) 555-0199"
+  }
+}

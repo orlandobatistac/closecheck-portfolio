@@ -1,0 +1,11 @@
+Field,Purchase Agreement,Closing Disclosure,Loan Note,Status
+Buyer Name,James R. Mitchell and Sarah L. Mitchell,James R. Mitchell and Sarah L. Mitchell,James R. Mitchell and Sarah L. Mitchell,MATCH
+Seller Name,Robert D. Greenwood and Linda K. Greenwood,Robert D. Greenwood and Linda K. Greenwood,N/A,MATCH
+Property Address,"742 Evergreen Terrace, Charlotte, NC 28201","742 Evergreen Terrace, Charlotte, NC 28201","742 Evergreen Terrace, Charlotte, NC 28201",MATCH
+Purchase Price,"$342,500.00","$342,500.00",N/A,MATCH
+Loan Amount,"$314,050.00","$314,050.00","$314,050.00",MATCH
+Closing Date,"June 15, 2026","June 15, 2026",N/A,MATCH
+Seller Credits,"$3,500.00","$3,500.00",N/A,MATCH
+Cash to Close,"$34,892.50","$34,892.50",N/A,MATCH
+Interest Rate,6.875%,6.875%,6.875%,MATCH
+Lender,"Piedmont Mortgage Partners, LLC","Piedmont Mortgage Partners, LLC","Piedmont Mortgage Partners, LLC",MATCH

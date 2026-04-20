@@ -1,0 +1,50 @@
+{
+  "transaction_id": "CC-2026-04-7421",
+  "_note": "CONFLICT: purchase_price, buyer_name, and closing_date all differ from PA",
+  "property": {
+    "address": "742 Evergreen Terrace, Charlotte, NC 28201",
+    "parcel": "217-541-09"
+  },
+  "buyers": [
+    {
+      "name": "Jim Mitchell",
+      "email": "james.mitchell@email.com"
+    }
+  ],
+  "financial": {
+    "purchase_price": 345000.0,
+    "loan_amount": 314050.0,
+    "cash_to_close": 34892.5,
+    "seller_credits": 5000.0,
+    "closing_date": "July 1, 2026"
+  },
+  "lender": {
+    "name": "Piedmont Mortgage Partners, LLC"
+  },
+  "conflicts_expected": [
+    {
+      "rule": "PA-001",
+      "field": "buyer_name",
+      "expected": "James R. Mitchell and Sarah L. Mitchell",
+      "found": "Jim Mitchell"
+    },
+    {
+      "rule": "PA-003",
+      "field": "purchase_price",
+      "expected": 342500.0,
+      "found": 345000.0
+    },
+    {
+      "rule": "PA-005",
+      "field": "closing_date",
+      "expected": "June 15, 2026",
+      "found": "July 1, 2026"
+    },
+    {
+      "rule": "CD-003",
+      "field": "seller_credits",
+      "expected": 3500.0,
+      "found": 5000.0
+    }
+  ]
+}
