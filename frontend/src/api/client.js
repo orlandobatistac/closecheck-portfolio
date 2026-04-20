@@ -53,4 +53,14 @@ export async function submitDemo() {
   return data
 }
 
+/**
+ * Returns the URL to stream an original uploaded file (for the PDF viewer).
+ * @param {string} jobId
+ * @param {string} filename
+ */
+export function getJobFileUrl(jobId, filename) {
+  const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+  return `${base}/api/v1/jobs/${encodeURIComponent(jobId)}/files/${encodeURIComponent(filename)}`
+}
+
 export default api

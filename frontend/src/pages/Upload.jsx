@@ -34,10 +34,10 @@ const sectionTitle = {
   letterSpacing: '-0.02em',
   color: '#1a1a18',
   lineHeight: 1.15,
-  marginBottom: '12px',
+  marginBottom: '16px',
 }
 const bodyText = {
-  fontSize: '14px',
+  fontSize: '15px',
   color: '#5f5e5a',
   lineHeight: 1.72,
 }
@@ -74,7 +74,7 @@ function HeroSection() {
         <h1
           style={{
             fontSize: 'clamp(28px, 4.5vw, 54px)',
-            fontWeight: 300,
+            fontWeight: 600,
             lineHeight: 1.08,
             letterSpacing: '-0.028em',
             color: '#1a1a18',
@@ -87,7 +87,7 @@ function HeroSection() {
         </h1>
         <p
           style={{
-            fontSize: '15px',
+            fontSize: '17px',
             color: '#5f5e5a',
             maxWidth: '520px',
             margin: '0 auto 36px',
@@ -102,7 +102,7 @@ function HeroSection() {
           .
         </p>
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <a href="#problem" className="cc-btn-sm" style={{ textDecoration: 'none' }}>
+          <a href="#demo" className="cc-btn-primary" style={{ textDecoration: 'none', padding: '10px 24px', fontSize: '14px' }}>
             See how it works ↓
           </a>
           <a
@@ -127,7 +127,7 @@ function ProblemSection() {
       id="problem"
       style={{ background: '#f7f7f5', borderBottom: '0.5px solid rgba(0,0,0,0.07)' }}
     >
-      <div className="cc-section" style={{ maxWidth: '680px' }}>
+      <div className="cc-section" style={{ maxWidth: '640px' }}>
         <span style={{ ...eyebrow }}>The problem</span>
         <p style={{ ...bodyText, marginBottom: '20px' }}>
           Closing coordinators spend{' '}
@@ -157,6 +157,147 @@ function ProblemSection() {
           “At a $5–6 per-file price point, gross margin stays above 98% even at
           low volume. The AI cost per validation is approximately $0.08.”
         </blockquote>
+
+        {/* ── Cost comparison ── */}
+        <div
+          style={{
+            background: '#1a1a18',
+            borderRadius: '14px',
+            padding: '24px',
+            marginTop: '28px',
+          }}
+        >
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '12px',
+              marginBottom: '20px',
+            }}
+          >
+            {/* Manual card */}
+            <div
+              style={{
+                background: 'rgba(252,235,235,0.10)',
+                border: '0.5px solid rgba(240,149,149,0.35)',
+                borderRadius: '12px',
+                padding: '20px',
+              }}
+            >
+              <p
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 500,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: '#F09595',
+                  marginBottom: '8px',
+                }}
+              >
+                Manual review
+              </p>
+              <p
+                style={{
+                  fontSize: '32px',
+                  fontWeight: 600,
+                  color: '#F09595',
+                  letterSpacing: '-0.02em',
+                  lineHeight: 1,
+                  marginBottom: '6px',
+                }}
+              >
+                ~$40
+              </p>
+              <p style={{ fontSize: '12px', color: 'rgba(240,149,149,0.65)' }}>per file · 3–4 hrs labor</p>
+            </div>
+
+            {/* CloseCheck receipt card */}
+            <div
+              style={{
+                background: 'rgba(234,243,222,0.10)',
+                border: '0.5px solid rgba(192,221,151,0.35)',
+                borderRadius: '12px',
+                padding: '20px',
+              }}
+            >
+              <p
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 500,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: '#C0DD97',
+                  marginBottom: '8px',
+                }}
+              >
+                CloseCheck
+              </p>
+              <p
+                style={{
+                  fontSize: '32px',
+                  fontWeight: 600,
+                  color: '#C0DD97',
+                  letterSpacing: '-0.02em',
+                  lineHeight: 1,
+                  marginBottom: '16px',
+                }}
+              >
+                $0.08
+              </p>
+              {/* Receipt line items */}
+              <div style={{ borderTop: '0.5px solid rgba(255,255,255,0.10)', paddingTop: '12px' }}>
+                {[
+                  { label: 'OCR + Parse',           cost: 'free'    },
+                  { label: 'Classification (Haiku)', cost: '~$0.001' },
+                  { label: 'Field extraction',       cost: '~$0.003' },
+                  { label: '42 rules',               cost: 'free'    },
+                  { label: 'Executive Brief',        cost: '~$0.04'  },
+                ].map(({ label, cost }) => (
+                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                    <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '10px', color: 'rgba(255,255,255,0.38)' }}>{label}</span>
+                    <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '10px', color: cost === 'free' ? 'rgba(192,221,151,0.65)' : 'rgba(255,255,255,0.55)' }}>{cost}</span>
+                  </div>
+                ))}
+                <div style={{ borderTop: '0.5px solid rgba(255,255,255,0.10)', paddingTop: '8px', marginTop: '4px', display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '10px', fontWeight: 600, color: '#C0DD97' }}>Total</span>
+                  <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '10px', fontWeight: 600, color: '#C0DD97' }}>$0.08</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Efficiency bars */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.38)', width: '84px', flexShrink: 0 }}>Manual</span>
+              <div style={{ height: '7px', background: 'rgba(240,149,149,0.45)', borderRadius: '4px', flex: 1 }} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.38)', width: '84px', flexShrink: 0 }}>CloseCheck</span>
+              <div
+                style={{
+                  height: '7px',
+                  background: '#C0DD97',
+                  borderRadius: '4px',
+                  width: '0.4%',
+                  minWidth: '4px',
+                  flexShrink: 0,
+                }}
+              />
+              <span
+                style={{
+                  fontFamily: 'DM Mono, monospace',
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  color: '#C0DD97',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                498× cheaper
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   )
@@ -231,19 +372,31 @@ function ArchitectureSection() {
                   style={{
                     background: '#f7f7f5',
                     border: '0.5px solid rgba(0,0,0,0.12)',
-                    borderRadius: '8px',
-                    padding: '12px 18px',
+                    borderRadius: '10px',
+                    padding: '16px 20px',
                     textAlign: 'center',
-                    minWidth: '126px',
+                    minWidth: '160px',
+                    boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
                   }}
                 >
                   <div
                     style={{
                       fontFamily: 'DM Mono, monospace',
-                      fontSize: '11px',
-                      fontWeight: 500,
+                      fontSize: '10px',
+                      color: '#aaa99b',
+                      marginBottom: '8px',
+                      letterSpacing: '0.08em',
+                    }}
+                  >
+                    {String(i + 1).padStart(2, '0')}
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: 'DM Mono, monospace',
+                      fontSize: '13px',
+                      fontWeight: 600,
                       color: '#1a1a18',
-                      marginBottom: '4px',
+                      marginBottom: '5px',
                       whiteSpace: 'nowrap',
                     }}
                   >
@@ -252,7 +405,7 @@ function ArchitectureSection() {
                   <div
                     style={{
                       fontFamily: 'DM Mono, monospace',
-                      fontSize: '9px',
+                      fontSize: '11px',
                       color: '#888780',
                       whiteSpace: 'nowrap',
                     }}
@@ -261,7 +414,7 @@ function ArchitectureSection() {
                   </div>
                 </div>
                 {i < nodes.length - 1 && (
-                  <div style={{ padding: '0 8px', color: '#aaa99b', fontSize: '14px' }}>
+                  <div style={{ padding: '0 10px', color: '#888780', fontSize: '18px' }}>
                     →
                   </div>
                 )}
@@ -301,7 +454,7 @@ function ArchitectureSection() {
               >
                 {title}
               </p>
-              <p style={{ fontSize: '12px', color: '#5f5e5a', lineHeight: 1.65 }}>{body}</p>
+              <p style={{ fontSize: '13px', color: '#5f5e5a', lineHeight: 1.65 }}>{body}</p>
             </div>
           ))}
         </div>
@@ -560,7 +713,7 @@ function CostArchitectureSection() {
                 >
                   {title}
                 </p>
-                <p style={{ fontSize: '12px', color: '#5f5e5a', lineHeight: 1.6 }}>{body}</p>
+                <p style={{ fontSize: '13px', color: '#5f5e5a', lineHeight: 1.6 }}>{body}</p>
               </div>
             ))}
           </div>
@@ -741,9 +894,12 @@ function WhatItDetectsSection() {
                   >
                     {c.title}
                   </p>
-                  <p style={{ fontSize: '12px', color: '#5f5e5a', lineHeight: 1.65 }}>
+                  <p style={{ fontSize: '13px', color: '#5f5e5a', lineHeight: 1.65, marginBottom: '12px' }}>
                     {c.description}
                   </p>
+                  <div style={{ borderTop: '0.5px solid rgba(0,0,0,0.07)', paddingTop: '8px' }}>
+                    <span style={{ fontSize: '10px', color: '#aaa99b' }}>Source: {c.source}</span>
+                  </div>
                 </div>
               </div>
             )
@@ -1051,6 +1207,24 @@ function LiveDemoSection() {
                 <p style={{ fontSize: '11px', color: '#888780', textAlign: 'center' }}>
                   PDF · DOCX · ZIP · XLSX · CSV · images — up to 20 files, 25 MB each
                 </p>
+                {files.length === 0 && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDemo() }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '11px',
+                      color: '#888780',
+                      textDecoration: 'underline',
+                      textDecorationStyle: 'dotted',
+                      fontFamily: 'Sora, sans-serif',
+                      padding: 0,
+                    }}
+                  >
+                    Or try the Martinez Sample to see it in action →
+                  </button>
+                )}
               </div>
 
               {/* File list */}
@@ -1187,12 +1361,14 @@ function LiveDemoSection() {
                       : 'No files selected'}
                   </span>
                   <button
-                    className="cc-btn-primary"
+                    className="cc-btn-accent"
                     onClick={handleSubmit}
                     disabled={!files.length}
                     style={{
                       opacity: !files.length ? 0.4 : 1,
                       cursor: !files.length ? 'not-allowed' : 'pointer',
+                      boxShadow: files.length ? '0 0 0 3px rgba(26,79,204,0.20)' : 'none',
+                      transition: 'box-shadow 0.2s, opacity 0.12s',
                     }}
                   >
                     Validate →
@@ -1341,17 +1517,12 @@ function StackTimelineSection() {
           style={{
             borderTop: '0.5px solid rgba(255,255,255,0.07)',
             paddingTop: '40px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '20px',
           }}
         >
-          <div>
+          <div style={{ marginBottom: '24px' }}>
             <p
               style={{
-                fontSize: '14px',
+                fontSize: '16px',
                 fontWeight: 500,
                 color: 'rgba(255,255,255,0.85)',
                 marginBottom: '4px',
@@ -1359,33 +1530,71 @@ function StackTimelineSection() {
             >
               Built by Orlando B.
             </p>
-            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.38)' }}>
+            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.38)' }}>
               Full-stack developer &amp; AI systems builder · Charlotte, NC
             </p>
           </div>
-          <a
-            href="mailto:me@orlandobatista.dev"
+          <p
             style={{
-              fontFamily: 'Sora, sans-serif',
-              fontSize: '13px',
+              fontSize: '18px',
               fontWeight: 500,
-              color: 'rgba(255,255,255,0.85)',
-              background: 'rgba(255,255,255,0.07)',
-              border: '0.5px solid rgba(255,255,255,0.12)',
-              borderRadius: '20px',
-              padding: '10px 22px',
-              textDecoration: 'none',
-              transition: 'background 0.15s',
+              color: 'rgba(255,255,255,0.90)',
+              marginBottom: '20px',
+              lineHeight: 1.3,
             }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.background = 'rgba(255,255,255,0.12)')
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.background = 'rgba(255,255,255,0.07)')
-            }
           >
-            Interested in what I can build for your team? →
-          </a>
+            Let's build something together.
+          </p>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <a
+              href="mailto:me@orlandobatista.dev"
+              style={{
+                fontFamily: 'Sora, sans-serif',
+                fontSize: '13px',
+                fontWeight: 500,
+                color: 'rgba(255,255,255,0.85)',
+                background: 'rgba(255,255,255,0.07)',
+                border: '0.5px solid rgba(255,255,255,0.12)',
+                borderRadius: '20px',
+                padding: '10px 22px',
+                textDecoration: 'none',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background = 'rgba(255,255,255,0.12)')
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background = 'rgba(255,255,255,0.07)')
+              }
+            >
+              Email me →
+            </a>
+            <a
+              href="https://www.linkedin.com/in/orlandobatista-ai/"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                fontFamily: 'Sora, sans-serif',
+                fontSize: '13px',
+                fontWeight: 500,
+                color: 'rgba(255,255,255,0.85)',
+                background: 'rgba(255,255,255,0.07)',
+                border: '0.5px solid rgba(255,255,255,0.12)',
+                borderRadius: '20px',
+                padding: '10px 22px',
+                textDecoration: 'none',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background = 'rgba(255,255,255,0.12)')
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background = 'rgba(255,255,255,0.07)')
+              }
+            >
+              LinkedIn →
+            </a>
+          </div>
         </div>
       </div>
     </section>

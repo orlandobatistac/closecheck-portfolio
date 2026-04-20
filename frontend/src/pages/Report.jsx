@@ -7,6 +7,7 @@ import CategorySection from '../components/CategorySection'
 import ProgressBar from '../components/ProgressBar'
 import DownloadButton from '../components/DownloadButton'
 import EmailDraftModal from '../components/EmailDraftModal'
+import PdfViewer from '../components/PdfViewer'
 
 // ─── Action Plan Modal (inline per spec) ────────────────────────────────────
 
@@ -492,6 +493,7 @@ export default function Report() {
     { id: 'result', label: 'Result' },
     { id: 'documents', label: 'Documents' },
     { id: 'rules', label: 'Rules' },
+    { id: 'viewer', label: 'Document View' },
   ]
 
   return (
@@ -506,7 +508,7 @@ export default function Report() {
       }}
     >
       {/* Main card */}
-      <div className="cc-card" style={{ width: '100%', maxWidth: '720px' }}>
+      <div className="cc-card" style={{ width: '100%', maxWidth: activeTab === 'viewer' ? '1200px' : '720px', transition: 'max-width 0.25s ease' }}>
 
         {/* Topbar */}
         <div className="cc-topbar">
@@ -553,7 +555,7 @@ export default function Report() {
         {/* ── RESULT TAB ── */}
         {activeTab === 'result' && (
           <>
-            <SummaryBanner overall={report.overall} executiveBrief={report.executive_brief} />
+            <SummaryBanner overall={report.overall} executiveBrief={report.executive_brief} results={report.results || []} />
 
             <p
               className="cc-section-label"
@@ -630,6 +632,46 @@ export default function Report() {
                 />
               ))
             )}
+          </div>
+        )}
+
+        {/* ── DOCUMENT VIEW TAB ── */}
+        {activeTab === 'viewer' && (
+          <div style={{ display: 'flex', height: '680px' }}>
+            {/* Left: PDF viewer */}
+            <div
+              style={{
+                flex: '0 0 58%',
+                borderRight: '0.5px solid rgba(0,0,0,0.10)',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <PdfViewer jobId={jobId} documents={docs} />
+            </div>
+            {/* Right: Conflicts */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 24px' }}>
+              <p className="cc-section-label" style={{ marginBottom: '12px' }}>
+                Conflicts — {conflicts.length} found
+              </p>
+              {conflicts.length === 0 ? (
+                <p
+                  style={{
+                    fontSize: '13px',
+                    color: '#888780',
+                    textAlign: 'center',
+                    padding: '32px 0',
+                  }}
+                >
+                  No conflicts detected.
+                </p>
+              ) : (
+                conflicts.map((c) => (
+                  <RuleResult key={c.rule_id} conflict={c} onEscalate={handleEscalate} />
+                ))
+              )}
+            </div>
           </div>
         )}
       </div>

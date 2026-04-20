@@ -4,9 +4,17 @@ import { severityBg, severityColor, severityBorder, triageLabel } from '../utils
  * Triage hero: status pill + executive brief bullets.
  * Props: { overall: string, executiveBrief: string[] }
  */
-export default function SummaryBanner({ overall, executiveBrief }) {
+export default function SummaryBanner({ overall, executiveBrief, results = [] }) {
   const label = triageLabel(overall)
   const hasDollarOrPercent = (text) => /\$[\d,]+|\d+%/.test(text)
+
+  const passCount = results.filter((r) => r.status === 'PASS').length
+  const totalRules = results.filter((r) => r.status !== 'SKIPPED').length
+  const passRate = totalRules > 0 ? Math.round((passCount / totalRules) * 100) : 0
+  const gaugeColor = passRate >= 70 ? '#3B6D11' : passRate >= 40 ? '#854F0B' : '#A32D2D'
+  const gaugeTrack = passRate >= 70 ? '#EAF3DE' : passRate >= 40 ? '#FAEEDA' : '#FCEBEB'
+  const C = 175.93
+  const dashOffset = C * (1 - passRate / 100)
 
   return (
     <div
@@ -86,6 +94,61 @@ export default function SummaryBanner({ overall, executiveBrief }) {
           })}
         </ul>
       </div>
+
+      {/* Health score gauge */}
+      {totalRules > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px',
+            flexShrink: 0,
+          }}
+        >
+          <svg width="72" height="72" viewBox="0 0 72 72">
+            <circle cx="36" cy="36" r="28" fill="none" stroke={gaugeTrack} strokeWidth="6" />
+            <circle
+              cx="36"
+              cy="36"
+              r="28"
+              fill="none"
+              stroke={gaugeColor}
+              strokeWidth="6"
+              strokeLinecap="round"
+              strokeDasharray={`${C} ${C}`}
+              strokeDashoffset={dashOffset}
+              transform="rotate(-90 36 36)"
+              style={{ transition: 'stroke-dashoffset 0.6s ease' }}
+            />
+            <text
+              x="36"
+              y="40"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              style={{
+                fontFamily: 'Sora, sans-serif',
+                fontSize: '13px',
+                fontWeight: '600',
+                fill: gaugeColor,
+              }}
+            >
+              {passRate}%
+            </text>
+          </svg>
+          <span
+            style={{
+              fontSize: '9px',
+              fontWeight: 500,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: '#888780',
+            }}
+          >
+            Health
+          </span>
+        </div>
+      )}
     </div>
   )
 }

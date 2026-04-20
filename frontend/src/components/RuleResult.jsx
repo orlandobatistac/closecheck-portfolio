@@ -62,10 +62,17 @@ export default function RuleResult({ conflict, onEscalate }) {
         overflow: 'hidden',
         background: '#ffffff',
         opacity: resolved ? 0.55 : 1,
-        transition: 'border-color 0.15s, opacity 0.2s',
+        transition: 'border-color 0.15s, box-shadow 0.15s, opacity 0.2s',
+        ...(severity === 'high' && !resolved && { borderLeft: '3px solid #A32D2D' }),
       }}
-      onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.18)')}
-      onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.10)')}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.10)'
+        if (severity !== 'high') e.currentTarget.style.borderColor = 'rgba(0,0,0,0.18)'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow = 'none'
+        if (severity !== 'high') e.currentTarget.style.borderColor = 'rgba(0,0,0,0.10)'
+      }}
     >
       {/* Header */}
       <div
