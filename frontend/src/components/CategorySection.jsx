@@ -62,7 +62,7 @@ export default function CategorySection({ category, rules = [], defaultExpanded 
           {failCount > 0 && (
             <span
               style={{
-                fontSize: '10px',
+                fontSize: '11px',
                 fontWeight: 500,
                 padding: '2px 7px',
                 borderRadius: '20px',
@@ -76,7 +76,7 @@ export default function CategorySection({ category, rules = [], defaultExpanded 
           {warnCount > 0 && (
             <span
               style={{
-                fontSize: '10px',
+                fontSize: '11px',
                 fontWeight: 500,
                 padding: '2px 7px',
                 borderRadius: '20px',
@@ -112,7 +112,7 @@ export default function CategorySection({ category, rules = [], defaultExpanded 
                     <span
                       style={{
                         fontFamily: 'DM Mono, monospace',
-                        fontSize: '10px',
+                        fontSize: '11px',
                         color: '#888780',
                       }}
                     >
@@ -120,7 +120,7 @@ export default function CategorySection({ category, rules = [], defaultExpanded 
                     </span>
                     <span
                       style={{
-                        fontSize: '10px',
+                        fontSize: '11px',
                         fontWeight: 500,
                         padding: '2px 7px',
                         borderRadius: '20px',

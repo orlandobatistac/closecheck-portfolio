@@ -52,7 +52,7 @@ function StickyNav() {
           Live demo ↓
         </a>
         <a
-          href="https://github.com/orlandopalmeira"
+          href="https://github.com/orlandobatistac"
           target="_blank"
           rel="noopener noreferrer"
           className="cc-btn-sm"
@@ -106,7 +106,7 @@ function HeroSection() {
             See how it works ↓
           </a>
           <a
-            href="https://github.com/orlandopalmeira"
+            href="https://github.com/orlandobatistac"
             target="_blank"
             rel="noopener noreferrer"
             className="cc-btn-sm"
@@ -1357,14 +1357,14 @@ function StackTimelineSection() {
                 marginBottom: '4px',
               }}
             >
-              Built by Orlando
+              Built by Orlando B.
             </p>
             <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.38)' }}>
               Full-stack developer &amp; AI systems builder · Charlotte, NC
             </p>
           </div>
           <a
-            href="mailto:hello@rdapps.com"
+            href="mailto:me@orlandobatista.dev"
             style={{
               fontFamily: 'Sora, sans-serif',
               fontSize: '13px',
@@ -1424,7 +1424,7 @@ function Footer() {
           letterSpacing: '0.05em',
         }}
       >
-        RDAPPS.COM · hello@rdapps.com · github.com/orlandopalmeira
+        orlandobatista.dev · me@orlandobatista.dev · github.com/orlandobatistac
       </p>
     </footer>
   )

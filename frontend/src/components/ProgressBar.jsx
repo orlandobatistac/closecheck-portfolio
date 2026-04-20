@@ -54,7 +54,7 @@ export default function ProgressBar({ documents }) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '9px',
+                fontSize: '11px',
                 fontWeight: 500,
                 fontFamily: 'DM Mono, monospace',
                 flexShrink: 0,

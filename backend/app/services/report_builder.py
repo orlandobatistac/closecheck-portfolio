@@ -197,8 +197,8 @@ def _get_action_plan(
 ) -> list[dict]:
     notable_issues = [
         {"rule_id": r.rule_id, "description": r.description,
-         "detail": r.detail, "severity": r.severity.value}
-        for r in (failed + warnings)[:15]
+         "detail": (r.detail or "")[:200], "severity": r.severity.value}
+        for r in (failed + warnings)[:12]
     ]
     if not notable_issues:
         return []
