@@ -1,6 +1,6 @@
 # CloseCheck — AI Pre-Close File Validator
 
-CloseCheck is an AI-powered tool that validates real estate transaction files before closing. It ingests closing packages (PDFs and DOCX documents), extracts key data from each file using Claude, and runs a structured rule engine — returning a clear **Pass / Warning / Fail** report that flags missing documents, value inconsistencies, and compliance gaps in seconds.
+CloseCheck is an AI-powered tool that validates real estate transaction files before closing. It ingests closing packages in any common format — PDF, DOCX, images, XLSX, CSV, HTML, JSON, TXT, and ZIP archives — extracts key data from each file using Claude, and runs a structured rule engine — returning a clear **Pass / Warning / Fail** report that flags missing documents, value inconsistencies, and compliance gaps in seconds.
 
 The product replaces 2–4 hours of manual file review with a 60-second AI audit. Upload a closing package, watch the scan complete, and receive an executive summary with a prioritized action plan and one-click email drafts for every conflict detected.
 
@@ -20,8 +20,10 @@ The product replaces 2–4 hours of manual file review with a 60-second AI audit
 | Layer | Technology | Notes |
 |-------|-----------|-------|
 | Backend API | FastAPI (Python 3.11+) | Async, OpenAPI docs at `/docs` |
-| LLM Processing | Claude API (`claude-sonnet-4-6`) | Document classification, field extraction, executive brief |
-| File Parsing | PyMuPDF, python-docx | PDF and DOCX ingestion |
+| LLM Processing | Claude API (`claude-sonnet-4-6`) | Document classification, field extraction, OCR, executive brief |
+| File Parsing | PyMuPDF, python-docx, openpyxl, BeautifulSoup4, Pillow | PDF, DOCX, XLSX, HTML, CSV, TXT, JSON, images |
+| OCR | Claude Vision API | Scanned PDFs and standalone image files |
+| Archive Handling | stdlib `zipfile` | ZIP with recursive extraction (up to 5 levels deep) |
 | PDF Reports | ReportLab | Generated PDF validation reports |
 | Database | SQLite via SQLAlchemy | Jobs and audit trail |
 | Frontend | React 18 + Vite + Tailwind CSS | SPA — Upload → Processing → Report |
@@ -42,24 +44,37 @@ The product replaces 2–4 hours of manual file review with a 60-second AI audit
 ┌───────────────────────▼─────────────────────────────┐
 │                  BACKEND (FastAPI)                   │
 │                                                      │
-│  POST /api/v1/validate  ──►  File Ingestion          │
-│                               │                      │
-│                         PDF/DOCX Parser              │
-│                               │                      │
-│                         Document Classifier          │
-│                          (Claude API)                │
-│                               │                      │
-│                         Field Extractor              │
-│                          (Claude API)                │
-│                               │                      │
-│                         Rule Engine (40 rules)       │
-│                          + Consistency Checks        │
-│                               │                      │
-│                         Report Builder               │
-│                      (executive brief + action plan) │
-│                          (Claude API)                │
-│                               │                      │
-│  GET  /api/v1/results/{id} ◄──┘                      │
+│  POST /api/v1/validate                               │
+│          │                                           │
+│          ▼                                           │
+│   ┌──────────────────────────────────────────┐       │
+│   │          Ingestion Pipeline              │       │
+│   │  1. Save uploaded files                  │       │
+│   │  2. Expand ZIPs (recursive, ZIP-Slip     │       │
+│   │     safe, up to 5 levels deep)           │       │
+│   │  3. Deduplicate by SHA-256               │       │
+│   │  4. Detect file type (magic bytes)       │       │
+│   │  5. Route to format extractor:           │       │
+│   │     PDF  → native text or OCR (Vision)  │       │
+│   │     DOCX → paragraphs + tables           │       │
+│   │     Image → Claude Vision OCR            │       │
+│   │     XLSX → per-sheet CSV text            │       │
+│   │     HTML → stripped plain text           │       │
+│   │     CSV / TXT / JSON → normalized text   │       │
+│   │  6. Normalize to ParsedDocument schema   │       │
+│   └───────────────────┬──────────────────────┘       │
+│                       │                              │
+│               Document Classifier (Claude API)       │
+│                       │                              │
+│               Field Extractor (Claude API)           │
+│                       │                              │
+│               Rule Engine (40 rules)                 │
+│                + Consistency Checks                  │
+│                       │                              │
+│               Report Builder (Claude API)            │
+│            (executive brief + action plan)           │
+│                       │                              │
+│  GET  /api/v1/results/{id} ◄─────────────────────── │
 │  GET  /api/v1/report/{id}/pdf                        │
 │  POST /api/v1/jobs/{id}/draft-email                  │
 └──────────────────────────────────────────────────────┘
@@ -106,7 +121,7 @@ See [Makefile](Makefile) for the full list of development commands.
 
 ## Demo Walkthrough
 
-1. **Upload** — Drag and drop 1–20 PDF/DOCX files onto the upload zone. Use the sample files in `sample-docs/Martinez_test/` to see intentional mismatches.
+1. **Upload** — Drag and drop 1–20 files onto the upload zone. Supported formats: PDF, DOCX, XLSX, CSV, HTML, TXT, JSON, images (JPG/PNG/GIF/TIFF/BMP/WebP), and ZIP archives (contents extracted automatically). Use the sample files in `sample-docs/Martinez_test/` to see intentional mismatches.
 
 2. **Processing** — Watch 5 animated steps as CloseCheck ingests, classifies, extracts fields, cross-references documents, and generates the executive brief.
 
@@ -120,6 +135,24 @@ See [Makefile](Makefile) for the full list of development commands.
 > - `PA-003`: Purchase price `$385,000` (PA) vs `$387,500` (closing disclosure) — FAIL
 > - `PA-001`: `Carlos Martinez` (PA/title) vs `Carlos Martínez` (lender commitment) — FAIL
 > - Missing: insurance binder, ID document → additional FAILs
+
+---
+
+## Supported File Formats
+
+| Format | Extensions | Notes |
+|--------|-----------|-------|
+| PDF | `.pdf` | Native text extraction; automatic OCR via Claude Vision for scanned pages |
+| Word | `.docx` | Paragraphs and tables |
+| Spreadsheet | `.xlsx`, `.xls` | Each sheet rendered as CSV-like text |
+| CSV / TSV | `.csv`, `.tsv` | Auto-detects delimiter and encoding |
+| HTML | `.html`, `.htm`, `.xhtml` | Scripts and styles stripped |
+| Plain text | `.txt`, `.md` | UTF-8 / Latin-1 / CP-1252 auto-detection |
+| JSON | `.json` | Pretty-printed; large arrays sampled to first 10 items |
+| Images | `.jpg`, `.png`, `.gif`, `.tiff`, `.bmp`, `.webp` | OCR via Claude Vision |
+| ZIP archive | `.zip` | Recursively extracted up to 5 levels; ZIP-Slip protected |
+
+Files with unrecognized types are skipped with a warning — the job continues with the remaining files. Duplicate files (by SHA-256) are deduplicated automatically.
 
 ---
 
@@ -148,7 +181,9 @@ Submit a closing package for validation.
 
 ```
 Content-Type: multipart/form-data
-files:            1–20 PDF or DOCX files (max 25 MB each)
+files:            1–20 files (max 25 MB each)
+                  Supported: PDF, DOCX, XLSX, CSV, HTML, TXT, JSON,
+                  images (JPG/PNG/GIF/TIFF/BMP/WebP), ZIP archives
 transaction_type: "residential" | "commercial"  (default: residential)
 ```
 
