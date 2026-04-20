@@ -61,19 +61,21 @@ def build_report(
     # Documents list from classifications
     documents = _build_documents(classifications or {}, rule_results)
 
-    # Executive brief via Claude
-    try:
-        executive_brief = _get_executive_brief(rule_results)
-    except Exception as exc:
-        logger.error("❌ Executive brief generation failed: %s", exc, exc_info=True)
-        raise
-
-    # Action plan via Claude
-    try:
-        action_plan = _get_action_plan(conflicts, failed, warnings)
-    except Exception as exc:
-        logger.error("❌ Action plan generation failed: %s", exc, exc_info=True)
-        raise
+    # Executive brief + action plan via Claude — both in parallel
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        brief_future = pool.submit(_get_executive_brief, rule_results)
+        plan_future  = pool.submit(_get_action_plan, conflicts, failed, warnings)
+        try:
+            executive_brief = brief_future.result()
+        except Exception as exc:
+            logger.error("❌ Executive brief generation failed: %s", exc, exc_info=True)
+            raise
+        try:
+            action_plan = plan_future.result()
+        except Exception as exc:
+            logger.error("❌ Action plan generation failed: %s", exc, exc_info=True)
+            raise
 
     return {
         "overall": overall,
@@ -205,7 +207,7 @@ def _get_action_plan(
         ACTION_PLAN_PROMPT.format(
             conflicts_json=json.dumps(notable_issues, indent=2)
         ),
-        max_tokens=4096,
+        max_tokens=1024,
     )
     if isinstance(result, list):
         return result

@@ -68,7 +68,8 @@ async def validate_files(
     db: Session = Depends(get_db),
 ):
     """
-    Accept a closing package (1–N PDF/DOCX files) and kick off async validation.
+    Accept a closing package (1–N files) and kick off async validation.
+    Supported formats: PDF, DOCX, ZIP, images, HTML, XLSX, CSV, TXT, JSON.
     Returns a job_id to poll with GET /results/{job_id}.
     """
     if not files:
@@ -289,30 +290,44 @@ def _process_job(job_id: str, file_payloads: list[tuple[str, bytes]]) -> None:
             len(flat_paths) - len(extracted),
         )
 
-        # Phase 2: classify each document
+        # Phase 2: classify each document — all docs in parallel
+        from concurrent.futures import ThreadPoolExecutor, as_completed
         t0 = time.perf_counter()
         classifications: dict[str, dict] = {}
-        for filename, text in extracted.items():
-            result = classify_document(text)
-            classifications[filename] = {
-                "document_type": result.document_type,
-                "confidence": result.confidence,
-                "notes": result.notes,
+        with ThreadPoolExecutor(max_workers=min(len(extracted), 8)) as pool:
+            future_to_file = {
+                pool.submit(classify_document, text): filename
+                for filename, text in extracted.items()
             }
-            logger.info("Classified %s → %s (%.0f%%)", filename, result.document_type, result.confidence * 100)
+            for future in as_completed(future_to_file):
+                filename = future_to_file[future]
+                result = future.result()  # propagates exceptions
+                classifications[filename] = {
+                    "document_type": result.document_type,
+                    "confidence": result.confidence,
+                    "notes": result.notes,
+                }
+                logger.info("Classified %s → %s (%.0f%%)", filename, result.document_type, result.confidence * 100)
         save_classifications(job_id, classifications)
         logger.info("[%s] Classification complete in %.2fs", job_id, time.perf_counter() - t0)
 
-        # Phase 3: extract fields per document type
+        # Phase 3: extract fields per document type — all doc types in parallel
         t0 = time.perf_counter()
         fields: dict[str, dict] = {}
-        for filename, info in classifications.items():
-            doc_type = info["document_type"]
-            if doc_type == "other":
-                continue
-            text = extracted.get(filename, "")
-            fields[doc_type] = extract_fields(doc_type, text)
-            logger.info("Extracted fields for %s (%s)", filename, doc_type)
+        extract_tasks = {
+            info["document_type"]: (filename, extracted.get(filename, ""))
+            for filename, info in classifications.items()
+            if info["document_type"] != "other"
+        }
+        with ThreadPoolExecutor(max_workers=min(len(extract_tasks), 8)) as pool:
+            future_to_doctype = {
+                pool.submit(extract_fields, doc_type, text): (doc_type, filename)
+                for doc_type, (filename, text) in extract_tasks.items()
+            }
+            for future in as_completed(future_to_doctype):
+                doc_type, filename = future_to_doctype[future]
+                fields[doc_type] = future.result()
+                logger.info("Extracted fields for %s (%s)", filename, doc_type)
         save_fields(job_id, fields)
         logger.info("[%s] Field extraction complete in %.2fs", job_id, time.perf_counter() - t0)
 

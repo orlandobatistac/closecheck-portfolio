@@ -66,8 +66,7 @@ class PDFExtractor(BaseExtractor):
             # Native text is sufficient
             text = "\n".join(native_texts)
             method = "native"
-        else:
-            # Scanned PDF — fall back to Claude Vision page by page
+        else:            # Scanned PDF — fall back to Claude Vision page by page
             logger.info(
                 "'%s' looks scanned (avg %.1f chars/page). Using OCR via Claude Vision.",
                 path.name,
@@ -80,7 +79,13 @@ class PDFExtractor(BaseExtractor):
             filename=path.name,
             file_type="pdf",
             text=text.strip(),
-            metadata={"pages": page_count, "avg_chars_per_page": round(avg_chars, 1)},
+            metadata={
+                "pages": page_count,
+                "avg_chars_per_page": round(avg_chars, 1),
+                # page_texts only stored for native PDFs (not OCR) to avoid
+                # duplicating large byte payloads; enables future section re-extraction.
+                "page_texts": native_texts if method == "native" else [],
+            },
             extraction_method=method,
             warnings=warnings,
             sha256=compute_sha256(path),

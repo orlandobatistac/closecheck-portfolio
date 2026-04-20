@@ -11,17 +11,20 @@ from app.rules.base import RuleResult, RuleStatus, Severity
 
 def run_consistency_checks(documents: dict) -> list[RuleResult]:
     """
-    Run cross-document field consistency checks.
+    Run cross-document field consistency checks in parallel.
     Returns one RuleResult per check (CC-001, CC-002).
     Only runs checks where at least two document sources have the relevant field.
     """
-    return [
-        r for r in [
-            _check_name_consistency(documents),
-            _check_address_consistency(documents),
-        ]
-        if r is not None
-    ]
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    checks = [_check_name_consistency, _check_address_consistency]
+    results: list[RuleResult] = [None] * len(checks)
+    with ThreadPoolExecutor(max_workers=len(checks)) as pool:
+        future_to_idx = {
+            pool.submit(fn, documents): i for i, fn in enumerate(checks)
+        }
+        for future in as_completed(future_to_idx):
+            results[future_to_idx[future]] = future.result()
+    return [r for r in results if r is not None]
 
 
 def _check_name_consistency(documents: dict) -> RuleResult:

@@ -26,15 +26,16 @@ def get_client() -> anthropic.Anthropic:
     return _client
 
 
-def claude_json(prompt: str, max_tokens: int = 1024) -> dict[str, Any]:
+def claude_json(prompt: str, max_tokens: int = 1024, model: str | None = None) -> dict[str, Any]:
     """
     Send a prompt to Claude and parse the response as JSON.
     Expects Claude to return a JSON object (no markdown fences).
+    Pass `model` to override the default settings.claude_model.
     Raises ClaudeResponseError if the response is not valid JSON.
     """
     client = get_client()
     message = client.messages.create(
-        model=settings.claude_model,
+        model=model or settings.claude_model,
         max_tokens=max_tokens,
         stream=False,
         messages=[{"role": "user", "content": prompt}],
