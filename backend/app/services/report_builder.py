@@ -69,13 +69,13 @@ def build_report(
         try:
             executive_brief = brief_future.result()
         except Exception as exc:
-            logger.error("❌ Executive brief generation failed: %s", exc, exc_info=True)
-            raise
+            logger.error("❌ Executive brief generation failed (degrading): %s", exc, exc_info=True)
+            executive_brief = ["Executive summary unavailable — review conflicts and action plan below."]
         try:
             action_plan = plan_future.result()
         except Exception as exc:
-            logger.error("❌ Action plan generation failed: %s", exc, exc_info=True)
-            raise
+            logger.error("❌ Action plan generation failed (degrading): %s", exc, exc_info=True)
+            action_plan = []
 
     return {
         "overall": overall,
@@ -179,7 +179,7 @@ def _get_executive_brief(rule_results: list[RuleResult]) -> list[str]:
         EXECUTIVE_BRIEF_PROMPT.format(
             rule_results_json=json.dumps(notable, indent=2)
         ),
-        max_tokens=1024,
+        max_tokens=2048,
     )
     bullets = result.get("bullets")
     if not isinstance(bullets, list) or len(bullets) == 0:
@@ -207,7 +207,7 @@ def _get_action_plan(
         ACTION_PLAN_PROMPT.format(
             conflicts_json=json.dumps(notable_issues, indent=2)
         ),
-        max_tokens=1024,
+        max_tokens=4096,
     )
     if isinstance(result, list):
         return result

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { getResults } from '../api/client'
 import SummaryBanner from '../components/SummaryBanner'
 import RuleResult from '../components/RuleResult'
@@ -510,8 +510,11 @@ export default function Report() {
 
         {/* Topbar */}
         <div className="cc-topbar">
-          <span className="cc-logo">CloseCheck</span>
-          <span className="cc-file-badge">{fileBadge}</span>
+          <Link to="/" className="cc-logo" style={{ textDecoration: 'none' }}>CloseCheck</Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="cc-file-badge">{fileBadge}</span>
+            <Link to="/" className="cc-btn-sm" style={{ textDecoration: 'none' }}>New package →</Link>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -586,9 +589,12 @@ export default function Report() {
                 <strong style={{ color: '#1a1a18', fontWeight: 500 }}>Suggested:</strong>{' '}
                 contact lender to confirm closing figures
               </span>
-              <button className="cc-btn-primary" onClick={() => setShowActionPlan(true)}>
-                Generate action plan →
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <DownloadButton jobId={jobId} />
+                <button className="cc-btn-primary" onClick={() => setShowActionPlan(true)}>
+                  Generate action plan →
+                </button>
+              </div>
             </div>
           </>
         )}
@@ -609,17 +615,7 @@ export default function Report() {
         {/* ── RULES TAB ── */}
         {activeTab === 'rules' && (
           <div style={{ padding: '24px' }}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: '16px',
-              }}
-            >
-              <p className="cc-section-label">All rules</p>
-              <DownloadButton jobId={jobId} />
-            </div>
+            <p className="cc-section-label" style={{ marginBottom: '16px' }}>All rules</p>
             {categories.length === 0 ? (
               <p style={{ fontSize: '13px', color: '#888780', textAlign: 'center', padding: '32px 0' }}>
                 No rules ran yet.
