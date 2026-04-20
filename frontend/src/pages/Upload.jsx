@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { submitValidation, getResults, submitDemo } from '../api/client'
+import RateLimitToast from '../components/RateLimitToast'
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const ALLOWED_EXTENSIONS = new Set([
@@ -34,10 +35,10 @@ const sectionTitle = {
   letterSpacing: '-0.02em',
   color: '#1a1a18',
   lineHeight: 1.15,
-  marginBottom: '12px',
+  marginBottom: '16px',
 }
 const bodyText = {
-  fontSize: '14px',
+  fontSize: '15px',
   color: '#5f5e5a',
   lineHeight: 1.72,
 }
@@ -70,39 +71,43 @@ function HeroSection() {
   return (
     <section style={{ background: '#fff', borderBottom: '0.5px solid rgba(0,0,0,0.07)' }}>
       <div className="cc-section" style={{ paddingTop: '100px', paddingBottom: '100px', textAlign: 'center' }}>
-        <span className="cc-hero-badge">Portfolio project · Real estate AI</span>
+        <span className="cc-hero-badge">AI Co-pilot · Real estate closing</span>
         <h1
           style={{
             fontSize: 'clamp(28px, 4.5vw, 54px)',
-            fontWeight: 300,
-            lineHeight: 1.08,
+            fontWeight: 600,
+            lineHeight: 1.15,
             letterSpacing: '-0.028em',
             color: '#1a1a18',
-            maxWidth: '700px',
+            maxWidth: '760px',
             margin: '0 auto 24px',
           }}
         >
-          An AI that reviews closing files
-          <br />in 60 seconds
+          The AI Co-pilot for Closing Coordinators
+          <br />
+          <span style={{ fontWeight: 300, color: '#5f5e5a', fontSize: 'clamp(22px, 3.5vw, 42px)' }}>
+            Turn 4 hours of review into 15 minutes of validation.
+          </span>
         </h1>
         <p
           style={{
-            fontSize: '15px',
+            fontSize: '17px',
             color: '#5f5e5a',
             maxWidth: '520px',
             margin: '0 auto 36px',
             lineHeight: 1.7,
           }}
         >
-          Built solo in 10 days using FastAPI, Claude API, React, and a rules
-          engine with{' '}
+          CloseCheck automates document data-mining so coordinators focus on
+          resolving conflicts — not finding them. Built with FastAPI, Claude API,
+          React, and{' '}
           <strong style={{ color: '#1a1a18', fontWeight: 500 }}>
             42 domain-specific validations
           </strong>
           .
         </p>
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <a href="#problem" className="cc-btn-sm" style={{ textDecoration: 'none' }}>
+          <a href="#demo" className="cc-btn-primary" style={{ textDecoration: 'none', padding: '10px 24px', fontSize: '14px' }}>
             See how it works ↓
           </a>
           <a
@@ -127,7 +132,7 @@ function ProblemSection() {
       id="problem"
       style={{ background: '#f7f7f5', borderBottom: '0.5px solid rgba(0,0,0,0.07)' }}
     >
-      <div className="cc-section" style={{ maxWidth: '680px' }}>
+      <div className="cc-section" style={{ maxWidth: '640px' }}>
         <span style={{ ...eyebrow }}>The problem</span>
         <p style={{ ...bodyText, marginBottom: '20px' }}>
           Closing coordinators spend{' '}
@@ -139,9 +144,9 @@ function ProblemSection() {
           that relies entirely on human attention and institutional knowledge.
         </p>
         <p style={{ ...bodyText, marginBottom: '28px' }}>
-          CloseCheck replaces that review with a 60-second AI audit. It classifies each
-          document, extracts key fields, runs 42 rule-based checks, and generates a
-          prioritized action plan — before any human touches the file.
+          CloseCheck automates the tedious data-matching and cross-document checks.
+          Coordinators receive a pre-built conflict list and action plan — so they
+          spend their time resolving issues, not searching for them.
         </p>
         <blockquote
           style={{
@@ -154,9 +159,278 @@ function ProblemSection() {
             lineHeight: 1.7,
           }}
         >
-          “At a $5–6 per-file price point, gross margin stays above 98% even at
-          low volume. The AI cost per validation is approximately $0.08.”
+          “At $5–6 per file, coordinators can process 4× more packages in the same
+          time — turning a 10-file week into a 40-file week without additional staff.”
         </blockquote>
+
+        {/* ── Cost comparison ── */}
+        <div
+          style={{
+            background: '#1a1a18',
+            borderRadius: '14px',
+            padding: '24px',
+            marginTop: '28px',
+          }}
+        >
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '12px',
+              marginBottom: '20px',
+            }}
+          >
+            {/* Manual card */}
+            <div
+              style={{
+                background: 'rgba(252,235,235,0.10)',
+                border: '0.5px solid rgba(240,149,149,0.35)',
+                borderRadius: '12px',
+                padding: '20px',
+              }}
+            >
+              <p
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 500,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: '#F09595',
+                  marginBottom: '8px',
+                }}
+              >
+                Manual review
+              </p>
+              <p
+                style={{
+                  fontSize: '32px',
+                  fontWeight: 600,
+                  color: '#F09595',
+                  letterSpacing: '-0.02em',
+                  lineHeight: 1,
+                  marginBottom: '6px',
+                }}
+              >
+                ~$40
+              </p>
+              <p style={{ fontSize: '12px', color: 'rgba(240,149,149,0.65)' }}>per file · 3–4 hrs labor</p>
+            </div>
+
+            {/* CloseCheck receipt card */}
+            <div
+              style={{
+                background: 'rgba(234,243,222,0.10)',
+                border: '0.5px solid rgba(192,221,151,0.35)',
+                borderRadius: '12px',
+                padding: '20px',
+              }}
+            >
+              <p
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 500,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: '#C0DD97',
+                  marginBottom: '8px',
+                }}
+              >
+                CloseCheck
+              </p>
+              <p
+                style={{
+                  fontSize: '32px',
+                  fontWeight: 600,
+                  color: '#C0DD97',
+                  letterSpacing: '-0.02em',
+                  lineHeight: 1,
+                  marginBottom: '16px',
+                }}
+              >
+                $0.08
+              </p>
+              {/* Receipt line items */}
+              <div style={{ borderTop: '0.5px solid rgba(255,255,255,0.10)', paddingTop: '12px' }}>
+                {[
+                  { label: 'OCR + Parse',           cost: 'free'    },
+                  { label: 'Classification (Haiku)', cost: '~$0.001' },
+                  { label: 'Field extraction',       cost: '~$0.003' },
+                  { label: '42 rules',               cost: 'free'    },
+                  { label: 'Executive Brief',        cost: '~$0.04'  },
+                ].map(({ label, cost }) => (
+                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                    <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '10px', color: 'rgba(255,255,255,0.38)' }}>{label}</span>
+                    <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '10px', color: cost === 'free' ? 'rgba(192,221,151,0.65)' : 'rgba(255,255,255,0.55)' }}>{cost}</span>
+                  </div>
+                ))}
+                <div style={{ borderTop: '0.5px solid rgba(255,255,255,0.10)', paddingTop: '8px', marginTop: '4px', display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '10px', fontWeight: 600, color: '#C0DD97' }}>Total</span>
+                  <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '10px', fontWeight: 600, color: '#C0DD97' }}>$0.08</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Efficiency bars */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.38)', width: '84px', flexShrink: 0 }}>Manual</span>
+              <div style={{ height: '7px', background: 'rgba(240,149,149,0.45)', borderRadius: '4px', flex: 1 }} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.38)', width: '84px', flexShrink: 0 }}>CloseCheck</span>
+              <div
+                style={{
+                  height: '7px',
+                  background: '#C0DD97',
+                  borderRadius: '4px',
+                  width: '0.4%',
+                  minWidth: '4px',
+                  flexShrink: 0,
+                }}
+              />
+              <span
+                style={{
+                  fontFamily: 'DM Mono, monospace',
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  color: '#C0DD97',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                498× cheaper
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ── Business Case ─────────────────────────────────────────────────────────────
+function BusinessCaseSection() {
+  const cards = [
+    {
+      badge: 'FREELANCE / IN-HOUSE',
+      badgeColor: '#3B6D11',
+      badgeBg: '#EAF3DE',
+      title: 'For the Coordinator',
+      headline: 'Do more files. Earn more per hour.',
+      body: 'Handle 4× the volume at the same per-file rate. CloseCheck finds the conflicts — you review them, resolve them, and sign off. Your expertise, multiplied.',
+      stat: '4× throughput',
+      statColor: '#3B6D11',
+      statBg: '#EAF3DE',
+    },
+    {
+      badge: 'OWNER / MANAGER',
+      badgeColor: '#854F0B',
+      badgeBg: '#FAEEDA',
+      title: 'For the Firm',
+      headline: 'Grow capacity without growing headcount.',
+      body: "Increase your firm's closing capacity by 300% without hiring. 10 files a week becomes 40 — same team, same quality, no bottleneck.",
+      stat: '10 → 40 files/week',
+      statColor: '#854F0B',
+      statBg: '#FAEEDA',
+    },
+  ]
+
+  return (
+    <section style={{ background: '#fff', borderBottom: '0.5px solid rgba(0,0,0,0.07)' }}>
+      <div className="cc-section">
+        <span style={{ ...eyebrow }}>The business case</span>
+        <h2 style={{ ...sectionTitle }}>Scale your practice without scaling your team</h2>
+        <p
+          style={{
+            fontFamily: 'DM Mono, monospace',
+            fontSize: '11px',
+            color: '#888780',
+            letterSpacing: '0.04em',
+            marginBottom: '16px',
+          }}
+        >
+          Architecture designed for sub-$0.10 unit economics and human-in-the-loop reliability.
+        </p>
+        <p style={{ ...bodyText, marginBottom: '40px', maxWidth: '520px' }}>
+          Whether you're an independent coordinator or running a title firm, CloseCheck
+          turns time saved directly into revenue earned.
+        </p>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+            gap: '16px',
+            marginBottom: '28px',
+          }}
+        >
+          {cards.map(({ badge, badgeColor, badgeBg, title, headline, body, stat, statColor, statBg }) => (
+            <div
+              key={title}
+              style={{
+                background: '#f7f7f5',
+                border: '0.5px solid rgba(0,0,0,0.10)',
+                borderRadius: '14px',
+                padding: '28px 24px',
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: 'DM Mono, monospace',
+                  fontSize: '9px',
+                  fontWeight: 500,
+                  padding: '2px 7px',
+                  borderRadius: '4px',
+                  background: badgeBg,
+                  color: badgeColor,
+                  display: 'inline-block',
+                  marginBottom: '16px',
+                  letterSpacing: '0.06em',
+                }}
+              >
+                {badge}
+              </span>
+              <p style={{ fontSize: '11px', fontWeight: 500, color: '#888780', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>
+                {title}
+              </p>
+              <p style={{ fontSize: '16px', fontWeight: 500, color: '#1a1a18', lineHeight: 1.3, marginBottom: '12px' }}>
+                {headline}
+              </p>
+              <p style={{ fontSize: '13px', color: '#5f5e5a', lineHeight: 1.7, marginBottom: '20px' }}>
+                {body}
+              </p>
+              <span
+                style={{
+                  fontFamily: 'DM Mono, monospace',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  padding: '5px 12px',
+                  borderRadius: '20px',
+                  background: statBg,
+                  color: statColor,
+                  display: 'inline-block',
+                }}
+              >
+                {stat}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <p
+          style={{
+            fontSize: '12px',
+            color: '#aaa99b',
+            lineHeight: 1.7,
+            borderLeft: '2px solid rgba(0,0,0,0.07)',
+            paddingLeft: '14px',
+            maxWidth: '560px',
+          }}
+        >
+          CloseCheck is a Human-in-the-Loop system. The AI handles data mining and
+          conflict detection; the coordinator remains the final validator and signatory.
+          High-stakes decisions stay human.
+        </p>
       </div>
     </section>
   )
@@ -165,41 +439,60 @@ function ProblemSection() {
 // ── Architecture ──────────────────────────────────────────────────────────────
 function ArchitectureSection() {
   const nodes = [
-    { label: 'File Upload', sub: 'PDF · DOCX · ZIP · images' },
-    { label: 'OCR + Parse', sub: 'PyMuPDF · pdfplumber' },
-    { label: 'Classifier', sub: 'Haiku → Sonnet' },
-    { label: 'Field Extractor', sub: 'ALTA-aware · head+tail' },
-    { label: '42 Rules', sub: 'Deterministic engine' },
-    { label: 'Report Builder', sub: 'Brief + Action Plan' },
-    { label: 'React Dashboard', sub: 'Conflicts · Email draft' },
+    {
+      num: '01', label: 'File Upload',     sub: 'PDF · DOCX · ZIP · images',  type: 'io',
+      icon: 'M7 2v7M4.5 6.5L7 9l2.5-2.5M2 11h10',
+    },
+    {
+      num: '02', label: 'OCR + Parse',     sub: 'PyMuPDF · pdfplumber',        type: 'process',
+      icon: 'M2 3h9M2 6.5h7M2 10h5M13 8l2 2-2 2',
+    },
+    {
+      num: '03', label: 'Classifier',      sub: 'Haiku → Sonnet',              type: 'llm',
+      icon: 'M7 1.5a5 5 0 100 11 5 5 0 000-11zM7 5v3.5l2.5 1.5',
+    },
+    {
+      num: '04', label: 'Field Extractor', sub: 'ALTA-aware · head+tail',      type: 'process',
+      icon: 'M2 2h10v4H2zM2 8h10v4H2zM5 4h4M5 10h4',
+    },
+    {
+      num: '05', label: '42 Rules',        sub: 'Deterministic engine',        type: 'process',
+      icon: 'M2 4.5l2 2 3-3M2 10l2 2 3-3M11 5.5h2M11 11h2',
+    },
+    {
+      num: '06', label: 'Report Builder',  sub: 'Brief + Action Plan',         type: 'llm',
+      icon: 'M3 1h6l3 3v9H3zM6 6h3M6 8.5h3M6 11h2',
+    },
+    {
+      num: '07', label: 'Dashboard',       sub: 'Conflicts · Email draft',     type: 'io',
+      icon: 'M1 2h12v9H1zM5 11v2M9 11v2M4 13h6',
+    },
   ]
+
+  const typeConfig = {
+    io:      { border: 'rgba(59,109,17,0.30)',  bg: 'rgba(234,243,222,0.60)',  iconColor: '#3B6D11', glow: 'ioGlow 4s ease-in-out infinite'  },
+    process: { border: 'rgba(0,0,0,0.09)',       bg: 'rgba(255,255,255,0.95)', iconColor: '#aaa99b', glow: 'none'                             },
+    llm:     { border: 'rgba(133,79,11,0.30)',   bg: 'rgba(250,238,218,0.60)', iconColor: '#854F0B', glow: 'llmGlow 3s ease-in-out infinite'  },
+  }
 
   const decisions = [
     {
-      badge: 'LLM',
-      badgeColor: '#3B6D11',
-      badgeBg: '#EAF3DE',
+      badge: 'LLM', badgeColor: '#3B6D11', badgeBg: '#EAF3DE',
       title: 'Why Claude API',
       body: 'Grounded extraction with JSON output. Claude returns structured fields — not prose — so downstream rule checks are deterministic. No fine-tuning required.',
     },
     {
-      badge: 'HYBRID',
-      badgeColor: '#3B6D11',
-      badgeBg: '#EAF3DE',
+      badge: 'HYBRID', badgeColor: '#3B6D11', badgeBg: '#EAF3DE',
       title: 'Why hybrid validation',
       body: 'Deterministic rules catch ~70% of issues before the API is called. Claude handles only semantic ambiguity: name normalization, narrative clauses, natural language summaries.',
     },
     {
-      badge: 'ARCH',
-      badgeColor: '#3B6D11',
-      badgeBg: '#EAF3DE',
+      badge: 'ARCH', badgeColor: '#3B6D11', badgeBg: '#EAF3DE',
       title: 'Why per-file architecture',
       body: 'Each job is a stateless UUID tracked in SQLite. Files saved to disk (S3-ready). Background tasks via FastAPI — no job queue dependency for the MVP.',
     },
     {
-      badge: 'API',
-      badgeColor: '#3B6D11',
-      badgeBg: '#EAF3DE',
+      badge: 'API', badgeColor: '#3B6D11', badgeBg: '#EAF3DE',
       title: 'Why FastAPI',
       body: 'Async background tasks for processing, auto-generated OpenAPI docs, Pydantic schemas for every response shape. Built for extension — the same endpoints power Docker or Lambda.',
     },
@@ -207,64 +500,193 @@ function ArchitectureSection() {
 
   return (
     <section style={{ background: '#fff', borderBottom: '0.5px solid rgba(0,0,0,0.07)' }}>
+      <style>{`
+        @keyframes flowPulse {
+          0%   { background-position: -120% center; }
+          100% { background-position: 220% center; }
+        }
+        @keyframes llmGlow {
+          0%, 100% { box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+          50%       { box-shadow: 0 2px 10px rgba(0,0,0,0.06), 0 0 20px 4px rgba(133,79,11,0.12); }
+        }
+        @keyframes ioGlow {
+          0%, 100% { box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+          50%       { box-shadow: 0 2px 10px rgba(0,0,0,0.06), 0 0 20px 4px rgba(59,109,17,0.12); }
+        }
+      `}</style>
+
       <div className="cc-section">
         <span style={{ ...eyebrow }}>Architecture</span>
         <h2 style={{ ...sectionTitle }}>From upload to report in one pipeline</h2>
-        <p style={{ ...bodyText, marginBottom: '40px', maxWidth: '560px' }}>
-          Seven stages, each independently testable. Deterministic work runs first —
-          the API is called only when genuine intelligence is needed.
+        <p style={{ ...bodyText, marginBottom: '48px', maxWidth: '560px' }}>
+          Seven stages purpose-built for speed and accuracy. Deterministic work runs
+          first — the AI is called only when genuine intelligence is needed, keeping
+          you in control of the final decision.
         </p>
 
-        {/* Pipeline diagram */}
-        <div style={{ overflowX: 'auto', marginBottom: '52px', paddingBottom: '4px' }}>
+        {/* ── Circuit pipeline ── */}
+        <div
+          style={{
+            background: 'linear-gradient(150deg, #f9f9f7 0%, #f2f2ef 100%)',
+            border: '0.5px solid rgba(0,0,0,0.07)',
+            borderRadius: '20px',
+            padding: '32px 28px 20px',
+            marginBottom: '52px',
+            overflowX: 'auto',
+            position: 'relative',
+          }}
+        >
+          {/* Dot-grid overlay */}
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              borderRadius: '20px',
+              opacity: 0.022,
+              backgroundImage: 'radial-gradient(circle, #1a1a18 1px, transparent 1px)',
+              backgroundSize: '18px 18px',
+              pointerEvents: 'none',
+            }}
+          />
+
+          {/* Node row */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               minWidth: 'max-content',
-              padding: '4px 2px',
+              position: 'relative',
+              zIndex: 1,
             }}
           >
-            {nodes.map((node, i) => (
-              <div key={node.label} style={{ display: 'flex', alignItems: 'center' }}>
-                <div
-                  style={{
-                    background: '#f7f7f5',
-                    border: '0.5px solid rgba(0,0,0,0.12)',
-                    borderRadius: '8px',
-                    padding: '12px 18px',
-                    textAlign: 'center',
-                    minWidth: '126px',
-                  }}
-                >
+            {nodes.map((node, i) => {
+              const cfg = typeConfig[node.type]
+              return (
+                <div key={node.num} style={{ display: 'flex', alignItems: 'center' }}>
+                  {/* Node card */}
                   <div
                     style={{
-                      fontFamily: 'DM Mono, monospace',
-                      fontSize: '11px',
-                      fontWeight: 500,
-                      color: '#1a1a18',
-                      marginBottom: '4px',
-                      whiteSpace: 'nowrap',
+                      background: cfg.bg,
+                      border: `0.5px solid ${cfg.border}`,
+                      borderRadius: '14px',
+                      padding: '16px 14px 13px',
+                      textAlign: 'center',
+                      minWidth: '132px',
+                      backdropFilter: 'blur(8px)',
+                      WebkitBackdropFilter: 'blur(8px)',
+                      animation: cfg.glow,
+                      position: 'relative',
                     }}
                   >
-                    {node.label}
+                    {/* Icon + step number */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', marginBottom: '10px' }}>
+                      <svg width="13" height="13" viewBox="0 0 15 15" fill="none">
+                        <path d={node.icon} stroke={cfg.iconColor} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      <span
+                        style={{
+                          fontFamily: 'DM Mono, monospace',
+                          fontSize: '9px',
+                          color: cfg.iconColor,
+                          letterSpacing: '0.14em',
+                          opacity: 0.8,
+                        }}
+                      >
+                        {node.num}
+                      </span>
+                    </div>
+
+                    {/* Label */}
+                    <div
+                      style={{
+                        fontFamily: 'DM Mono, monospace',
+                        fontSize: '11.5px',
+                        fontWeight: 600,
+                        color: '#1a1a18',
+                        marginBottom: '4px',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {node.label}
+                    </div>
+
+                    {/* Sub-tech */}
+                    <div
+                      style={{
+                        fontFamily: 'DM Mono, monospace',
+                        fontSize: '9.5px',
+                        color: '#888780',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {node.sub}
+                    </div>
+
+                    {/* LLM badge */}
+                    {node.type === 'llm' && (
+                      <div
+                        style={{
+                          marginTop: '8px',
+                          display: 'inline-block',
+                          fontFamily: 'DM Mono, monospace',
+                          fontSize: '8px',
+                          fontWeight: 500,
+                          letterSpacing: '0.10em',
+                          color: '#854F0B',
+                          background: 'rgba(133,79,11,0.09)',
+                          padding: '2px 7px',
+                          borderRadius: '20px',
+                        }}
+                      >
+                        LLM
+                      </div>
+                    )}
                   </div>
-                  <div
-                    style={{
-                      fontFamily: 'DM Mono, monospace',
-                      fontSize: '9px',
-                      color: '#888780',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {node.sub}
-                  </div>
+
+                  {/* Animated connector track */}
+                  {i < nodes.length - 1 && (
+                    <div style={{ position: 'relative', width: '30px', height: '2px', flexShrink: 0 }}>
+                      {/* Static track */}
+                      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.08)', borderRadius: '2px' }} />
+                      {/* Moving light */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          borderRadius: '2px',
+                          background: 'linear-gradient(90deg, transparent 0%, rgba(192,221,151,0.9) 50%, transparent 100%)',
+                          backgroundSize: '50% 100%',
+                          backgroundRepeat: 'no-repeat',
+                          animation: `flowPulse ${1.6 + i * 0.22}s linear infinite`,
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
-                {i < nodes.length - 1 && (
-                  <div style={{ padding: '0 8px', color: '#aaa99b', fontSize: '14px' }}>
-                    →
-                  </div>
-                )}
+              )
+            })}
+          </div>
+
+          {/* Legend */}
+          <div
+            style={{
+              display: 'flex',
+              gap: '18px',
+              marginTop: '20px',
+              paddingTop: '14px',
+              borderTop: '0.5px solid rgba(0,0,0,0.05)',
+              flexWrap: 'wrap',
+            }}
+          >
+            {[
+              { dot: '#3B6D11', dotBg: '#EAF3DE', label: 'Input / Output'  },
+              { dot: '#aaa99b', dotBg: '#fff',     label: 'Deterministic'   },
+              { dot: '#854F0B', dotBg: '#FAEEDA',  label: 'LLM-assisted'    },
+            ].map(({ dot, dotBg, label }) => (
+              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: dotBg, border: `1px solid ${dot}`, flexShrink: 0 }} />
+                <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '10px', color: '#aaa99b' }}>{label}</span>
               </div>
             ))}
           </div>
@@ -296,12 +718,8 @@ function ArchitectureSection() {
               >
                 {badge}
               </span>
-              <p
-                style={{ fontSize: '13px', fontWeight: 500, color: '#1a1a18', marginBottom: '8px' }}
-              >
-                {title}
-              </p>
-              <p style={{ fontSize: '12px', color: '#5f5e5a', lineHeight: 1.65 }}>{body}</p>
+              <p style={{ fontSize: '13px', fontWeight: 500, color: '#1a1a18', marginBottom: '8px' }}>{title}</p>
+              <p style={{ fontSize: '13px', color: '#5f5e5a', lineHeight: 1.65 }}>{body}</p>
             </div>
           ))}
         </div>
@@ -560,7 +978,7 @@ function CostArchitectureSection() {
                 >
                   {title}
                 </p>
-                <p style={{ fontSize: '12px', color: '#5f5e5a', lineHeight: 1.6 }}>{body}</p>
+                <p style={{ fontSize: '13px', color: '#5f5e5a', lineHeight: 1.6 }}>{body}</p>
               </div>
             ))}
           </div>
@@ -630,7 +1048,9 @@ function CostArchitectureSection() {
           </strong>{' '}
           — including classification, field extraction, 42 rule checks,
           cross-document consistency analysis, a 5-bullet executive brief, and a
-          prioritized action plan. At $5–6 per file, gross margin stays above 98%.
+          prioritized action plan. At $5–6 per file, gross margin stays above 98%.{' '}
+          For a coordinator charging $10/file, a 4× throughput gain translates
+          directly to 4× revenue per hour.
         </p>
       </div>
     </section>
@@ -741,9 +1161,12 @@ function WhatItDetectsSection() {
                   >
                     {c.title}
                   </p>
-                  <p style={{ fontSize: '12px', color: '#5f5e5a', lineHeight: 1.65 }}>
+                  <p style={{ fontSize: '13px', color: '#5f5e5a', lineHeight: 1.65, marginBottom: '12px' }}>
                     {c.description}
                   </p>
+                  <div style={{ borderTop: '0.5px solid rgba(0,0,0,0.07)', paddingTop: '8px' }}>
+                    <span style={{ fontSize: '10px', color: '#aaa99b' }}>Source: {c.source}</span>
+                  </div>
                 </div>
               </div>
             )
@@ -761,6 +1184,7 @@ function LiveDemoSection() {
   const [view, setView] = useState('idle')
   const [stepIdx, setStepIdx] = useState(0)
   const [errorMsg, setErrorMsg] = useState(null)
+  const [rateLimitMsg, setRateLimitMsg] = useState(null)
   const [demoLoading, setDemoLoading] = useState(false)
   const inputRef = useRef()
   const navigate = useNavigate()
@@ -794,7 +1218,17 @@ function LiveDemoSection() {
         } else if (data.status === 'failed') {
           clearInterval(stepIvRef.current)
           clearInterval(pollRef.current)
-          setErrorMsg('Validation failed on the server. Please try again.')
+          const raw = data.error_message || ''
+          const zipMatch = raw.match(/ZIP expansion yielded (\d+) files which exceeds the limit of (\d+)/)
+          if (zipMatch) {
+            setErrorMsg(`Too many files — this package has ${zipMatch[1]} files but the limit is ${zipMatch[2]}. Please reduce the number of files and try again.`)
+          } else if (raw.toLowerCase().includes('invalid json') || raw.toLowerCase().includes('cannot be parsed')) {
+            setErrorMsg('The AI service returned an unexpected response. Please try again.')
+          } else if (raw) {
+            setErrorMsg(raw)
+          } else {
+            setErrorMsg('Validation failed on the server. Please try again.')
+          }
           setView('error')
         }
       } catch {
@@ -815,8 +1249,13 @@ function LiveDemoSection() {
       const result = await submitValidation(files)
       startPolling(result.job_id)
     } catch (err) {
-      setErrorMsg(err.response?.data?.detail || 'Upload failed. Is the API running?')
-      setView('error')
+      if (err.response?.status === 429) {
+        setView('idle')
+        setRateLimitMsg(err.response.data?.detail?.message || 'You\u2019ve reached the demo limit. Please try again later.')
+      } else {
+        setErrorMsg(err.response?.data?.detail || 'Upload failed. Is the API running?')
+        setView('error')
+      }
     }
   }
 
@@ -831,7 +1270,11 @@ function LiveDemoSection() {
       startPolling(result.job_id)
     } catch (err) {
       setDemoLoading(false)
-      setErrorMsg(err.response?.data?.detail || 'Demo request failed. Is the API running?')
+      if (err.response?.status === 429) {
+        setRateLimitMsg(err.response.data?.detail?.message || 'You\u2019ve reached the demo limit. Please try again later.')
+      } else {
+        setErrorMsg(err.response?.data?.detail || 'Demo request failed. Is the API running?')
+      }
     }
   }
 
@@ -850,10 +1293,14 @@ function LiveDemoSection() {
   }
 
   return (
-    <section
-      id="demo"
-      style={{ background: '#f7f7f5', padding: '80px 24px 100px' }}
-    >
+    <>
+      {rateLimitMsg && (
+        <RateLimitToast message={rateLimitMsg} onClose={() => setRateLimitMsg(null)} />
+      )}
+      <section
+        id="demo"
+        style={{ background: '#f7f7f5', padding: '80px 24px 100px' }}
+      >
       <div style={{ maxWidth: '720px', margin: '0 auto' }}>
         <span
           style={{
@@ -1051,6 +1498,24 @@ function LiveDemoSection() {
                 <p style={{ fontSize: '11px', color: '#888780', textAlign: 'center' }}>
                   PDF · DOCX · ZIP · XLSX · CSV · images — up to 20 files, 25 MB each
                 </p>
+                {files.length === 0 && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDemo() }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '11px',
+                      color: '#888780',
+                      textDecoration: 'underline',
+                      textDecorationStyle: 'dotted',
+                      fontFamily: 'Sora, sans-serif',
+                      padding: 0,
+                    }}
+                  >
+                    Or try the Martinez Sample to see it in action →
+                  </button>
+                )}
               </div>
 
               {/* File list */}
@@ -1187,12 +1652,14 @@ function LiveDemoSection() {
                       : 'No files selected'}
                   </span>
                   <button
-                    className="cc-btn-primary"
+                    className="cc-btn-accent"
                     onClick={handleSubmit}
                     disabled={!files.length}
                     style={{
                       opacity: !files.length ? 0.4 : 1,
                       cursor: !files.length ? 'not-allowed' : 'pointer',
+                      boxShadow: files.length ? '0 0 0 3px rgba(26,79,204,0.20)' : 'none',
+                      transition: 'box-shadow 0.2s, opacity 0.12s',
                     }}
                   >
                     Validate →
@@ -1204,6 +1671,7 @@ function LiveDemoSection() {
         </div>
       </div>
     </section>
+    </>
   )
 }
 
@@ -1341,17 +1809,12 @@ function StackTimelineSection() {
           style={{
             borderTop: '0.5px solid rgba(255,255,255,0.07)',
             paddingTop: '40px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '20px',
           }}
         >
-          <div>
+          <div style={{ marginBottom: '24px' }}>
             <p
               style={{
-                fontSize: '14px',
+                fontSize: '16px',
                 fontWeight: 500,
                 color: 'rgba(255,255,255,0.85)',
                 marginBottom: '4px',
@@ -1359,33 +1822,71 @@ function StackTimelineSection() {
             >
               Built by Orlando B.
             </p>
-            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.38)' }}>
+            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.38)' }}>
               Full-stack developer &amp; AI systems builder · Charlotte, NC
             </p>
           </div>
-          <a
-            href="mailto:me@orlandobatista.dev"
+          <p
             style={{
-              fontFamily: 'Sora, sans-serif',
-              fontSize: '13px',
+              fontSize: '18px',
               fontWeight: 500,
-              color: 'rgba(255,255,255,0.85)',
-              background: 'rgba(255,255,255,0.07)',
-              border: '0.5px solid rgba(255,255,255,0.12)',
-              borderRadius: '20px',
-              padding: '10px 22px',
-              textDecoration: 'none',
-              transition: 'background 0.15s',
+              color: 'rgba(255,255,255,0.90)',
+              marginBottom: '20px',
+              lineHeight: 1.3,
             }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.background = 'rgba(255,255,255,0.12)')
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.background = 'rgba(255,255,255,0.07)')
-            }
           >
-            Interested in what I can build for your team? →
-          </a>
+            Let's build something together.
+          </p>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <a
+              href="mailto:me@orlandobatista.dev"
+              style={{
+                fontFamily: 'Sora, sans-serif',
+                fontSize: '13px',
+                fontWeight: 500,
+                color: 'rgba(255,255,255,0.85)',
+                background: 'rgba(255,255,255,0.07)',
+                border: '0.5px solid rgba(255,255,255,0.12)',
+                borderRadius: '20px',
+                padding: '10px 22px',
+                textDecoration: 'none',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background = 'rgba(255,255,255,0.12)')
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background = 'rgba(255,255,255,0.07)')
+              }
+            >
+              Email me →
+            </a>
+            <a
+              href="https://www.linkedin.com/in/orlandobatista-ai/"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                fontFamily: 'Sora, sans-serif',
+                fontSize: '13px',
+                fontWeight: 500,
+                color: 'rgba(255,255,255,0.85)',
+                background: 'rgba(255,255,255,0.07)',
+                border: '0.5px solid rgba(255,255,255,0.12)',
+                borderRadius: '20px',
+                padding: '10px 22px',
+                textDecoration: 'none',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background = 'rgba(255,255,255,0.12)')
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background = 'rgba(255,255,255,0.07)')
+              }
+            >
+              LinkedIn →
+            </a>
+          </div>
         </div>
       </div>
     </section>
@@ -1414,7 +1915,7 @@ function Footer() {
           letterSpacing: '0.06em',
         }}
       >
-        CLOSECHECK · AI PRE-CLOSE VALIDATOR · BUILT WITH CLAUDE API
+        CLOSECHECK · AI CO-PILOT FOR CLOSING COORDINATORS · BUILT WITH CLAUDE API
       </p>
       <p
         style={{
@@ -1437,6 +1938,7 @@ export default function Upload() {
       <StickyNav />
       <HeroSection />
       <ProblemSection />
+      <BusinessCaseSection />
       <ArchitectureSection />
       <CostArchitectureSection />
       <WhatItDetectsSection />

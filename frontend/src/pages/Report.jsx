@@ -1,439 +1,49 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getResults } from '../api/client'
-import SummaryBanner from '../components/SummaryBanner'
-import RuleResult from '../components/RuleResult'
-import CategorySection from '../components/CategorySection'
-import ProgressBar from '../components/ProgressBar'
 import DownloadButton from '../components/DownloadButton'
 import EmailDraftModal from '../components/EmailDraftModal'
+import PdfViewer from '../components/PdfViewer'
+import FlashReportModal from '../components/FlashReportModal'
+import TaskCard from '../components/TaskCard'
 
-// ─── Action Plan Modal (inline per spec) ────────────────────────────────────
-
-function ActionPlanModal({ report, completedSteps, onToggleStep, onDraftEmail, onClose }) {
-  const conflicts = report.conflicts || []
-  const actionPlan = report.action_plan || []
-  const docs = report.documents || []
-  const openConflicts = conflicts.filter((c) => !c.resolved).length
-  const missingDocs = docs.filter((d) => d.status === 'missing').length
-  const blockers = actionPlan.filter((item) => item.is_blocker)
-  const completedCount = Object.values(completedSteps).filter(Boolean).length
-  const total = actionPlan.length
-  const fileId = docs[0]?.filename?.replace(/\.[^.]+$/, '') || `Job_${report.job_id?.slice(0, 8)}`
-
-  const triageStyle = () => {
-    if (report.overall === 'FAIL') return { bg: '#FCEBEB', color: '#A32D2D', border: '#F09595', label: 'Blocked' }
-    if (report.overall === 'WARNING') return { bg: '#FAEEDA', color: '#854F0B', border: '#FAC775', label: 'Needs review' }
-    return { bg: '#EAF3DE', color: '#3B6D11', border: '#C0DD97', label: 'Ready to close' }
-  }
-  const ts = triageStyle()
-
-  const stepNumStyle = (urgency) => {
-    if (urgency === 'now') return { background: '#FCEBEB', color: '#A32D2D' }
-    if (urgency === 'today') return { background: '#FAEEDA', color: '#854F0B' }
-    return { background: '#f7f7f5', color: '#5f5e5a' }
-  }
-
-  const urgencyTag = (urgency) => {
-    if (urgency === 'now') return { bg: '#FCEBEB', color: '#A32D2D', label: 'Do now' }
-    if (urgency === 'today') return { bg: '#FAEEDA', color: '#854F0B', label: 'Today' }
-    return { bg: '#f7f7f5', color: '#5f5e5a', label: 'After steps 1–3' }
-  }
-
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.35)',
-        zIndex: 100,
-        display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'center',
-        overflowY: 'auto',
-        padding: '32px 16px',
-      }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
-    >
-      <div
-        style={{
-          width: '100%',
-          maxWidth: '680px',
-          background: '#ffffff',
-          border: '0.5px solid rgba(0,0,0,0.10)',
-          borderRadius: '12px',
-          overflow: 'hidden',
-          boxShadow: '0 2px 24px rgba(0,0,0,0.07)',
-          padding: '24px',
-          position: 'relative',
-        }}
-      >
-        {/* Close */}
-        <button
-          onClick={onClose}
-          style={{
-            position: 'absolute',
-            top: '14px',
-            right: '14px',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: '#888780',
-            fontSize: '16px',
-          }}
-        >
-          ✕
-        </button>
-
-        {/* File row */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '24px',
-          }}
-        >
-          <span
-            style={{ fontFamily: 'DM Mono, monospace', fontSize: '12px', color: '#888780' }}
-          >
-            {fileId} — Action Plan
-          </span>
-          <span
-            style={{
-              fontSize: '11px',
-              fontWeight: 500,
-              padding: '4px 12px',
-              borderRadius: '20px',
-              background: ts.bg,
-              color: ts.color,
-              border: `0.5px solid ${ts.border}`,
-            }}
-          >
-            {ts.label}
-          </span>
-        </div>
-
-        {/* Metric cards */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-            gap: '10px',
-            marginBottom: '28px',
-          }}
-        >
-          {[
-            { label: 'Conflicts', value: `${openConflicts} open`, danger: openConflicts > 0 },
-            { label: 'Missing docs', value: String(missingDocs), danger: missingDocs > 0 },
-            { label: 'Est. resolution', value: '2–4 hrs', danger: false },
-            { label: 'Action items', value: String(total), danger: false },
-          ].map((card) => (
-            <div
-              key={card.label}
-              style={{ background: '#f7f7f5', borderRadius: '8px', padding: '12px' }}
-            >
-              <p
-                style={{
-                  fontSize: '10px',
-                  fontWeight: 500,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  color: '#888780',
-                  marginBottom: '4px',
-                }}
-              >
-                {card.label}
-              </p>
-              <p
-                style={{
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  color: card.danger ? '#A32D2D' : '#1a1a18',
-                }}
-              >
-                {card.value}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {/* Blocker box */}
-        {blockers.length > 0 && (
-          <div
-            style={{
-              border: '0.5px solid #F09595',
-              borderRadius: '12px',
-              background: '#FCEBEB',
-              padding: '14px',
-              marginBottom: '28px',
-            }}
-          >
-            <p
-              style={{
-                fontSize: '10px',
-                fontWeight: 500,
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                color: '#A32D2D',
-                marginBottom: '8px',
-              }}
-            >
-              Blockers — file cannot close until resolved
-            </p>
-            {blockers.map((b, i) => (
-              <p
-                key={i}
-                style={{
-                  fontSize: '12px',
-                  color: '#791F1F',
-                  lineHeight: 1.6,
-                  paddingLeft: '12px',
-                  position: 'relative',
-                  marginBottom: i < blockers.length - 1 ? '4px' : 0,
-                }}
-              >
-                <span
-                  style={{
-                    position: 'absolute',
-                    left: 0,
-                    top: '7px',
-                    width: '4px',
-                    height: '4px',
-                    borderRadius: '50%',
-                    background: '#E24B4A',
-                  }}
-                />
-                {b.description}
-              </p>
-            ))}
-          </div>
-        )}
-
-        {/* Section label */}
-        <p
-          style={{
-            fontSize: '10px',
-            fontWeight: 500,
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            color: '#888780',
-            marginBottom: '12px',
-          }}
-        >
-          Action steps — in order of priority
-        </p>
-
-        {/* Action list */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '28px' }}>
-          {actionPlan.length === 0 ? (
-            <p style={{ fontSize: '13px', color: '#888780', textAlign: 'center', padding: '20px 0' }}>
-              No action items generated.
-            </p>
-          ) : (
-            actionPlan.map((item, i) => {
-              const numSt = stepNumStyle(item.urgency)
-              const urgTag = urgencyTag(item.urgency)
-              const done = completedSteps[i]
-              return (
-                <div
-                  key={i}
-                  style={{
-                    border: '0.5px solid rgba(0,0,0,0.10)',
-                    borderRadius: '12px',
-                    background: '#ffffff',
-                    overflow: 'hidden',
-                    transition: 'border-color 0.12s',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.18)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.10)')}
-                >
-                  {/* Item header */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '12px 14px',
-                    }}
-                  >
-                    <span
-                      style={{
-                        width: '22px',
-                        height: '22px',
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '11px',
-                        fontWeight: 500,
-                        flexShrink: 0,
-                        ...numSt,
-                      }}
-                    >
-                      {i + 1}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: '13px',
-                        fontWeight: 500,
-                        color: '#1a1a18',
-                        flex: 1,
-                      }}
-                    >
-                      {item.title}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: '10px',
-                        fontWeight: 500,
-                        padding: '2px 8px',
-                        borderRadius: '20px',
-                        flexShrink: 0,
-                        background: urgTag.bg,
-                        color: urgTag.color,
-                      }}
-                    >
-                      {urgTag.label}
-                    </span>
-                  </div>
-
-                  {/* Item body */}
-                  <div
-                    style={{
-                      padding: '10px 14px 13px 48px',
-                      borderTop: '0.5px solid rgba(0,0,0,0.10)',
-                      fontSize: '12px',
-                      color: '#5f5e5a',
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    {item.description}
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        marginTop: '8px',
-                        flexWrap: 'wrap',
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: '10px',
-                          background: '#f7f7f5',
-                          color: '#5f5e5a',
-                          padding: '2px 8px',
-                          borderRadius: '20px',
-                          border: '0.5px solid rgba(0,0,0,0.10)',
-                        }}
-                      >
-                        {item.owner}
-                      </span>
-                      <button
-                        onClick={() => onToggleStep(i)}
-                        style={{
-                          fontSize: '11px',
-                          fontWeight: 500,
-                          padding: '4px 12px',
-                          borderRadius: '20px',
-                          border: done
-                            ? '0.5px solid #C0DD97'
-                            : '0.5px solid rgba(0,0,0,0.18)',
-                          background: done ? '#EAF3DE' : 'transparent',
-                          color: done ? '#3B6D11' : '#5f5e5a',
-                          cursor: 'pointer',
-                          marginLeft: 'auto',
-                          fontFamily: 'Sora, sans-serif',
-                          transition: 'background 0.12s, color 0.12s',
-                        }}
-                      >
-                        {done ? 'Done ✓' : 'Mark done'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )
-            })
-          )}
-        </div>
-
-        {/* Bottom row */}
-        <div
-          style={{
-            display: 'flex',
-            gap: '16px',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingTop: '8px',
-            borderTop: '0.5px solid rgba(0,0,0,0.10)',
-          }}
-        >
-          <div style={{ flex: 1 }}>
-            <p style={{ fontSize: '11px', color: '#888780', marginBottom: '6px' }}>
-              {completedCount} of {total} steps completed
-            </p>
-            <div
-              style={{
-                height: '4px',
-                background: '#f7f7f5',
-                borderRadius: '4px',
-                overflow: 'hidden',
-              }}
-            >
-              <div
-                style={{
-                  height: '4px',
-                  background: '#639922',
-                  borderRadius: '4px',
-                  width: total > 0 ? `${Math.round((completedCount / total) * 100)}%` : '0%',
-                  transition: 'width 0.4s ease',
-                }}
-              />
-            </div>
-          </div>
-          <button
-            className="cc-btn-primary"
-            onClick={() => onDraftEmail(conflicts[0])}
-          >
-            Draft lender email →
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ─── Report Page ─────────────────────────────────────────────────────────────
+// ─── (ActionPlanModal removed — replaced by FlashReportModal + TaskCard) ────
 
 export default function Report() {
   const { jobId } = useParams()
   const [report, setReport] = useState(null)
   const [fetchError, setFetchError] = useState(null)
-  const [activeTab, setActiveTab] = useState('result')
-  const [showActionPlan, setShowActionPlan] = useState(false)
+
+  // Flash Report modal — auto-opens once data loads
+  const [showFlashReport, setShowFlashReport] = useState(false)
+
+  // Controlled PDF viewer
+  const [activePdfDoc, setActivePdfDoc] = useState(null)
+  const [activePdfPage, setActivePdfPage] = useState(null)
+
+  // Per-task resolved state: { [index]: bool }
+  const [resolvedTasks, setResolvedTasks] = useState({})
+
+  // Left panel tab
+  const [leftTab, setLeftTab] = useState('issues')
+
+  // Email draft modal
   const [showEmailModal, setShowEmailModal] = useState(false)
   const [emailConflict, setEmailConflict] = useState(null)
-  const [completedSteps, setCompletedSteps] = useState({})
 
   useEffect(() => {
     if (!jobId) return
     getResults(jobId)
-      .then(setReport)
+      .then((data) => {
+        setReport(data)
+        setShowFlashReport(true) // auto-open on load
+      })
       .catch(() => setFetchError('Could not load report.'))
   }, [jobId])
 
   if (fetchError) {
     return (
-      <div
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: '#f0efe9',
-        }}
-      >
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f0efe9' }}>
         <p style={{ color: '#A32D2D', fontSize: '14px' }}>{fetchError}</p>
       </div>
     )
@@ -441,211 +51,384 @@ export default function Report() {
 
   if (!report) {
     return (
-      <div
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: '#f0efe9',
-        }}
-      >
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f0efe9' }}>
         <div className="cc-spinner" />
       </div>
     )
   }
 
-  // Group results by category, FAIL first within each group
-  const resultsByCategory = {}
-  for (const r of (report.results || [])) {
-    if (!resultsByCategory[r.category]) resultsByCategory[r.category] = []
-    resultsByCategory[r.category].push(r)
-  }
-  for (const cat of Object.keys(resultsByCategory)) {
-    resultsByCategory[cat].sort((a, b) => {
-      const order = { FAIL: 0, WARNING: 1, INFO: 2, PASS: 3, SKIPPED: 4 }
-      return (order[a.status] ?? 5) - (order[b.status] ?? 5)
-    })
-  }
-
   const conflicts = report.conflicts || []
+  const actionPlan = report.action_plan || []
   const docs = report.documents || []
+  const results = report.results || []
   const fileBadge = docs[0]?.filename || 'Closing package'
-  const categories = Object.keys(resultsByCategory)
 
-  const handleToggleStep = (i) => {
-    setCompletedSteps((prev) => ({ ...prev, [i]: !prev[i] }))
+  // ── Build merged task list (by-index pairing) ──────────────────────────────
+  const taskCount = Math.max(conflicts.length, actionPlan.length)
+  const tasks = Array.from({ length: taskCount }, (_, i) => ({
+    conflict: conflicts[i] || null,
+    actionItem: actionPlan[i] || null,
+  }))
+
+  // ── Health Score ───────────────────────────────────────────────────────────
+  const passCount = results.filter((r) => r.status === 'PASS').length
+  const totalRules = results.filter((r) => r.status !== 'SKIPPED').length
+  const passRate = totalRules > 0 ? Math.round((passCount / totalRules) * 100) : 0
+  const gaugeColor = passRate >= 70 ? '#3B6D11' : passRate >= 40 ? '#854F0B' : '#A32D2D'
+  const gaugeTrack = passRate >= 70 ? '#EAF3DE' : passRate >= 40 ? '#FAEEDA' : '#FCEBEB'
+  const C = 175.93
+  const dashOffset = C * (1 - passRate / 100)
+
+  // ── Triage style ───────────────────────────────────────────────────────────
+  const triageStyle = () => {
+    if (report.overall === 'FAIL')    return { bg: '#FCEBEB', color: '#A32D2D', border: '#F09595', label: 'Blocked' }
+    if (report.overall === 'WARNING') return { bg: '#FAEEDA', color: '#854F0B', border: '#FAC775', label: 'Needs review' }
+    return { bg: '#EAF3DE', color: '#3B6D11', border: '#C0DD97', label: 'Ready to close' }
   }
+  const ts = triageStyle()
+
+  // ── Handlers ───────────────────────────────────────────────────────────────
+  const handleToggleResolved = (i) =>
+    setResolvedTasks((prev) => ({ ...prev, [i]: !prev[i] }))
 
   const handleEscalate = (conflict) => {
     setEmailConflict(conflict)
     setShowEmailModal(true)
   }
 
-  const handleDraftEmail = (conflict) => {
-    setEmailConflict(conflict || conflicts[0])
-    setShowActionPlan(false)
-    setShowEmailModal(true)
+  // Accept {filename, page, ruleId} from TaskCard chips/header clicks.
+  // Also accepts a plain string for backward-compat with any legacy callers.
+  // Normalizes "Purchase Agreement" → "purchase_agreement" to match d.document_type.
+  // Falls back to results.documents_referenced when filename is absent (old jobs,
+  // single-doc issues, "document not found" rules that have no doc_a).
+  const handleDocClick = (target) => {
+    const filename = target?.filename ?? target
+    const page = target?.page ?? null
+    const ruleId = target?.ruleId ?? null
+    const normalize = (s) => (s || '').toLowerCase().replace(/[\s-]+/g, '_')
+
+    const findByName = (name) =>
+      name
+        ? docs.find(
+            (d) =>
+              d.filename === name ||
+              d.document_type === name ||
+              normalize(d.document_type) === normalize(name)
+          )
+        : null
+
+    let match = findByName(filename)
+
+    // Fallback: resolve from results.documents_referenced using ruleId.
+    // Covers old jobs where single-doc issues have no doc_a, and any case
+    // where the filename / label doesn't match a known document.
+    if (!match && ruleId) {
+      const ruleResult = results.find((r) => r.rule_id === ruleId)
+      const docTypes = ruleResult?.documents_referenced || []
+      for (const docType of docTypes) {
+        match = findByName(docType)
+        if (match) break
+      }
+    }
+
+    const resolved = match?.filename || null
+    if (resolved) {
+      setActivePdfDoc(resolved)
+      setActivePdfPage(page)
+    }
   }
 
-  const TABS = [
-    { id: 'result', label: 'Result' },
-    { id: 'documents', label: 'Documents' },
-    { id: 'rules', label: 'Rules' },
-  ]
+  // Effective PDF doc: use activePdfDoc if set and exists, else first viewable
+  const viewableDocs = docs.filter((d) => d.status !== 'missing')
+  const effectivePdfDoc = activePdfDoc || viewableDocs[0]?.filename || null
 
   return (
     <div
       style={{
-        minHeight: '100vh',
-        background: '#f0efe9',
+        height: '100vh',
         display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'center',
-        padding: '32px 16px',
+        flexDirection: 'column',
+        background: '#f0efe9',
+        overflow: 'hidden',
       }}
     >
-      {/* Main card */}
-      <div className="cc-card" style={{ width: '100%', maxWidth: '720px' }}>
-
-        {/* Topbar */}
-        <div className="cc-topbar">
-          <Link to="/" className="cc-logo" style={{ textDecoration: 'none' }}>CloseCheck</Link>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span className="cc-file-badge">{fileBadge}</span>
-            <Link to="/" className="cc-btn-sm" style={{ textDecoration: 'none' }}>New package →</Link>
-          </div>
+      {/* ── Topbar ─────────────────────────────────────────── */}
+      <div className="cc-topbar" style={{ flexShrink: 0 }}>
+        <Link to="/" className="cc-logo" style={{ textDecoration: 'none' }}>CloseCheck</Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span className="cc-file-badge">{fileBadge}</span>
+          <DownloadButton jobId={jobId} />
+          <Link to="/" className="cc-btn-sm" style={{ textDecoration: 'none' }}>New package →</Link>
         </div>
-
-        {/* Tabs */}
-        <div
-          style={{
-            display: 'flex',
-            padding: '0 24px',
-            borderBottom: '0.5px solid rgba(0,0,0,0.10)',
-          }}
-        >
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              style={{
-                fontSize: '12px',
-                fontWeight: 500,
-                padding: '10px 0',
-                marginRight: '20px',
-                color: activeTab === tab.id ? '#1a1a18' : '#888780',
-                background: 'none',
-                border: 'none',
-                borderBottom: activeTab === tab.id
-                  ? '2px solid #1a1a18'
-                  : '2px solid transparent',
-                cursor: 'pointer',
-                fontFamily: 'Sora, sans-serif',
-                transition: 'all 0.15s',
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* ── RESULT TAB ── */}
-        {activeTab === 'result' && (
-          <>
-            <SummaryBanner overall={report.overall} executiveBrief={report.executive_brief} />
-
-            <p
-              className="cc-section-label"
-              style={{ padding: '20px 24px 10px' }}
-            >
-              Conflicts detected — {conflicts.length} of {docs.length} docs
-            </p>
-
-            <div style={{ padding: '0 24px 24px' }}>
-              {conflicts.length === 0 ? (
-                <p style={{ fontSize: '13px', color: '#888780', textAlign: 'center', padding: '16px 0' }}>
-                  No conflicts detected.
-                </p>
-              ) : (
-                conflicts.map((c) => (
-                  <RuleResult key={c.rule_id} conflict={c} onEscalate={handleEscalate} />
-                ))
-              )}
-            </div>
-
-            {/* Bottom bar */}
-            <div
-              style={{
-                borderTop: '0.5px solid rgba(0,0,0,0.10)',
-                padding: '14px 24px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '16px',
-              }}
-            >
-              <span style={{ fontSize: '12px', color: '#5f5e5a' }}>
-                <strong style={{ color: '#1a1a18', fontWeight: 500 }}>Suggested:</strong>{' '}
-                contact lender to confirm closing figures
-              </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <DownloadButton jobId={jobId} />
-                <button className="cc-btn-primary" onClick={() => setShowActionPlan(true)}>
-                  Generate action plan →
-                </button>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* ── DOCUMENTS TAB ── */}
-        {activeTab === 'documents' && (
-          <>
-            <p
-              className="cc-section-label"
-              style={{ padding: '20px 24px 10px' }}
-            >
-              Documents processed — {docs.length} files
-            </p>
-            <ProgressBar documents={docs} />
-          </>
-        )}
-
-        {/* ── RULES TAB ── */}
-        {activeTab === 'rules' && (
-          <div style={{ padding: '24px' }}>
-            <p className="cc-section-label" style={{ marginBottom: '16px' }}>All rules</p>
-            {categories.length === 0 ? (
-              <p style={{ fontSize: '13px', color: '#888780', textAlign: 'center', padding: '32px 0' }}>
-                No rules ran yet.
-              </p>
-            ) : (
-              categories.map((cat) => (
-                <CategorySection
-                  key={cat}
-                  category={cat}
-                  rules={resultsByCategory[cat]}
-                  defaultExpanded={resultsByCategory[cat].some((r) => r.status === 'FAIL')}
-                />
-              ))
-            )}
-          </div>
-        )}
       </div>
 
-      {/* Action Plan Modal */}
-      {showActionPlan && (
-        <ActionPlanModal
+      {/* ── Split area ─────────────────────────────────────── */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+
+        {/* Left (40%): Control panel ──────────────────────── */}
+        <div
+          style={{
+            flex: '0 0 40%',
+            borderRight: '0.5px solid rgba(0,0,0,0.12)',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            background: '#f7f7f5',
+            boxShadow: '2px 0 8px rgba(0,0,0,0.04)',
+          }}
+        >
+          {/* ── Sticky: Health Score + Status + View Summary ─── */}
+          <div
+            style={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 10,
+              background: '#ffffff',
+              borderBottom: '0.5px solid rgba(0,0,0,0.10)',
+              padding: '14px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '14px',
+              flexShrink: 0,
+            }}
+          >
+            {/* Health gauge */}
+            {totalRules > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
+                <svg width="56" height="56" viewBox="0 0 72 72">
+                  <circle cx="36" cy="36" r="28" fill="none" stroke={gaugeTrack} strokeWidth="7" />
+                  <circle
+                    cx="36" cy="36" r="28"
+                    fill="none"
+                    stroke={gaugeColor}
+                    strokeWidth="7"
+                    strokeLinecap="round"
+                    strokeDasharray={`${C} ${C}`}
+                    strokeDashoffset={dashOffset}
+                    transform="rotate(-90 36 36)"
+                    style={{ transition: 'stroke-dashoffset 0.6s ease' }}
+                  />
+                  <text
+                    x="36" y="40"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    style={{ fontFamily: 'Sora, sans-serif', fontSize: '13px', fontWeight: '600', fill: gaugeColor }}
+                  >
+                    {passRate}%
+                  </text>
+                </svg>
+                <span style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#888780' }}>
+                  Health
+                </span>
+              </div>
+            )}
+
+            {/* Status + issue count */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '5px 12px',
+                  borderRadius: '40px',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  marginBottom: '5px',
+                  background: ts.bg,
+                  color: ts.color,
+                  border: `0.5px solid ${ts.border}`,
+                }}
+              >
+                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />
+                {ts.label}
+              </div>
+              <p style={{ fontSize: '11px', color: '#888780', margin: 0, lineHeight: 1.4 }}>
+                {tasks.length} issue{tasks.length !== 1 ? 's' : ''} · {docs.length} doc{docs.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+
+            {/* View Summary button */}
+            <button
+              className="cc-btn-sm"
+              onClick={() => setShowFlashReport(true)}
+              style={{ flexShrink: 0 }}
+            >
+              View Summary
+            </button>
+          </div>
+
+          {/* ── Tab bar ───────────────────────────────────── */}
+          <div
+            style={{
+              display: 'flex',
+              borderBottom: '0.5px solid rgba(0,0,0,0.10)',
+              background: '#ffffff',
+              flexShrink: 0,
+            }}
+          >
+            {[{ id: 'issues', label: `Issues (${tasks.length})` }, { id: 'rules', label: `Rules (${totalRules})` }].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setLeftTab(tab.id)}
+                style={{
+                  flex: 1,
+                  padding: '9px 0',
+                  fontSize: '11px',
+                  fontWeight: leftTab === tab.id ? 600 : 400,
+                  color: leftTab === tab.id ? '#1a1a18' : '#888780',
+                  background: 'none',
+                  border: 'none',
+                  borderBottom: leftTab === tab.id ? '2px solid #1a1a18' : '2px solid transparent',
+                  cursor: 'pointer',
+                  letterSpacing: '0.02em',
+                  transition: 'color 0.15s',
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* ── Scrollable content ────────────────────────── */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '12px 12px 24px' }}>
+            {leftTab === 'issues' ? (
+              <>
+                <p
+                  className="cc-section-label"
+                  style={{ marginBottom: '8px', fontSize: '10px', letterSpacing: '0.08em' }}
+                >
+                  Issues — {tasks.filter((_, i) => !resolvedTasks[i]).length} open
+                </p>
+
+                {tasks.length === 0 ? (
+                  <p style={{ fontSize: '13px', color: '#888780', textAlign: 'center', padding: '32px 0' }}>
+                    No issues detected. File is clean.
+                  </p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {tasks.map((task, i) => (
+                      <TaskCard
+                        key={task.conflict?.rule_id || `task-${i}`}
+                        conflict={task.conflict}
+                        actionItem={task.actionItem}
+                        resolved={!!resolvedTasks[i]}
+                        onToggleResolved={() => handleToggleResolved(i)}
+                        onEscalate={handleEscalate}
+                        onDocClick={handleDocClick}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <p
+                  className="cc-section-label"
+                  style={{ marginBottom: '8px', fontSize: '10px', letterSpacing: '0.08em' }}
+                >
+                  All rules — {passCount} passed · {results.filter((r) => r.status === 'WARNING').length} warnings · {results.filter((r) => r.status === 'FAIL').length} failed
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  {results
+                    .filter((r) => r.status !== 'SKIPPED')
+                    .sort((a, b) => {
+                      const order = { FAIL: 0, WARNING: 1, PASS: 2 }
+                      return (order[a.status] ?? 3) - (order[b.status] ?? 3)
+                    })
+                    .map((r) => {
+                      const statusColors = {
+                        FAIL:    { color: '#A32D2D', bg: '#FCEBEB', border: 'rgba(163,45,45,0.20)' },
+                        WARNING: { color: '#854F0B', bg: '#FAEEDA', border: 'rgba(133,79,11,0.20)' },
+                        PASS:    { color: '#3B6D11', bg: '#EAF3DE', border: 'rgba(59,109,17,0.15)' },
+                      }
+                      const sc = statusColors[r.status] || statusColors.PASS
+                      return (
+                        <div
+                          key={r.rule_id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '10px',
+                            padding: '9px 11px',
+                            borderRadius: '8px',
+                            border: `0.5px solid ${sc.border}`,
+                            background: r.status === 'PASS' ? '#ffffff' : sc.bg,
+                          }}
+                        >
+                          <span
+                            style={{
+                              flexShrink: 0,
+                              marginTop: '1px',
+                              width: '46px',
+                              textAlign: 'center',
+                              fontFamily: 'DM Mono, monospace',
+                              fontSize: '9px',
+                              fontWeight: 600,
+                              letterSpacing: '0.06em',
+                              padding: '2px 5px',
+                              borderRadius: '4px',
+                              background: sc.bg,
+                              color: sc.color,
+                              border: `0.5px solid ${sc.border}`,
+                            }}
+                          >
+                            {r.status}
+                          </span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: '12px', fontWeight: 500, color: '#1a1a18', marginBottom: r.detail ? '3px' : 0, lineHeight: 1.4 }}>
+                              {r.description}
+                            </p>
+                            {r.detail && (
+                              <p style={{ fontSize: '11px', color: '#5f5e5a', lineHeight: 1.5, margin: 0 }}>
+                                {r.detail}
+                              </p>
+                            )}
+                          </div>
+                          <span style={{ flexShrink: 0, fontFamily: 'DM Mono, monospace', fontSize: '9px', color: '#aaa99b', marginTop: '1px' }}>
+                            {r.rule_id}
+                          </span>
+                        </div>
+                      )
+                    })}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Right (60%): PDF viewer ────────────────────────── */}
+        <div
+          style={{
+            flex: 1,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            background: '#ffffff',
+          }}
+        >
+          <PdfViewer
+            jobId={jobId}
+            documents={docs}
+            selectedDoc={effectivePdfDoc}
+            onSelectDoc={(filename) => {
+              setActivePdfDoc(filename)
+              setActivePdfPage(null)
+            }}
+            pageNumber={activePdfPage}
+          />
+        </div>
+      </div>
+
+      {/* ── Flash Report Modal ──────────────────────────────── */}
+      {showFlashReport && (
+        <FlashReportModal
           report={report}
-          completedSteps={completedSteps}
-          onToggleStep={handleToggleStep}
-          onDraftEmail={handleDraftEmail}
-          onClose={() => setShowActionPlan(false)}
+          onClose={() => setShowFlashReport(false)}
         />
       )}
 
-      {/* Email Draft Modal */}
+      {/* ── Email Draft Modal ───────────────────────────────── */}
       {showEmailModal && emailConflict && (
         <EmailDraftModal
           isOpen={showEmailModal}

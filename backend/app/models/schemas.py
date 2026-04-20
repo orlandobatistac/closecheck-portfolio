@@ -58,6 +58,10 @@ class ConflictCard(BaseModel):
     value_a: Optional[str] = None
     doc_b: Optional[str] = None
     value_b: Optional[str] = None
+    filename_a: Optional[str] = None   # actual uploaded filename for doc_a
+    filename_b: Optional[str] = None   # actual uploaded filename for doc_b
+    page_a: Optional[int] = None       # 1-indexed page where value_a was found
+    page_b: Optional[int] = None       # 1-indexed page where value_b was found
 
 
 class ActionItem(BaseModel):
@@ -72,6 +76,7 @@ class JobResultResponse(BaseModel):
     job_id: str
     status: str
     overall: Optional[str] = None
+    error_message: Optional[str] = None
     summary: Optional[JobSummary] = None
     documents: Optional[list[DocumentInfo]] = None
     results: Optional[list[RuleResultSchema]] = None

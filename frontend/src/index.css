@@ -12,6 +12,8 @@
   --border: rgba(0, 0, 0, 0.10);
   --border-md: rgba(0, 0, 0, 0.18);
   --border-hi: rgba(0, 0, 0, 0.30);
+  --accent: #1A4FCC;
+  --accent-hover: #1541A8;
 }
 
 * {
@@ -102,6 +104,29 @@ body {
 
   .cc-btn-primary:hover {
     opacity: 0.85;
+  }
+
+  .cc-btn-accent {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 8px 18px;
+    border-radius: 20px;
+    border: none;
+    background: var(--accent);
+    color: #ffffff;
+    cursor: pointer;
+    font-family: 'Sora', sans-serif;
+    white-space: nowrap;
+    transition: background 0.15s;
+  }
+
+  .cc-btn-accent:hover {
+    background: var(--accent-hover);
+  }
+
+  .cc-btn-accent:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 
   @keyframes spin {
