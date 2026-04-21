@@ -5,7 +5,10 @@ from typing import List
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, File, Form, HTTPException, Request, UploadFile
 from sqlalchemy.orm import Session
 
+from app.api.deps.auth import verify_api_key
+from app.api.deps.email_limit import check_email_draft_limit, record_email_draft
 from app.api.deps.rate_limit import check_demo_rate_limit, record_rate_limit_entry
+from app.api.deps.upload_rate_limit import check_upload_rate_limit, record_upload_attempt
 from app.config import settings
 from app.db.database import get_db
 from app.models.job import JobStatus, ValidationJob
@@ -68,6 +71,7 @@ async def validate_files(
     files: List[UploadFile] = File(...),
     transaction_type: str = Form(default="residential"),
     db: Session = Depends(get_db),
+    _: str = Depends(verify_api_key),
 ):
     """
     Accept a closing package (1–N files) and kick off async validation.
@@ -80,6 +84,7 @@ async def validate_files(
     if len(files) > settings.max_files_per_job:
         raise HTTPException(400, f"Maximum {settings.max_files_per_job} files per job")
 
+    check_upload_rate_limit(request, db)
     check_demo_rate_limit(request, file_count=len(files), db=db)
 
     for f in files:
@@ -102,6 +107,7 @@ async def validate_files(
     db.refresh(job)
 
     record_rate_limit_entry(request, file_count=len(files), db=db)
+    record_upload_attempt(request, db)
 
     file_payloads: list[tuple[str, bytes]] = []
     for f in files:
@@ -162,8 +168,10 @@ def get_results(job_id: str, db: Session = Depends(get_db)):
 @router.post("/jobs/{job_id}/draft-email", response_model=EmailDraftResponse)
 def draft_email(
     job_id: str,
+    request: Request,
     body: EmailDraftRequest,
     db: Session = Depends(get_db),
+    _: str = Depends(verify_api_key),
 ):
     """Generate a professional email draft for a specific conflict in a job."""
     job = db.query(ValidationJob).filter(ValidationJob.id == job_id).first()
@@ -180,6 +188,8 @@ def draft_email(
             404, f"Conflict '{body.conflict_rule_id}' not found in job report"
         )
 
+    check_email_draft_limit(job_id, request, db)
+
     from app.llm.client import claude_json
     from app.llm.prompts import EMAIL_DRAFT_PROMPT
     import json
@@ -194,12 +204,16 @@ def draft_email(
             model="claude-haiku-4-5",
         )
         conflict_type = conflict.get("type", "Issue")
-        return EmailDraftResponse(
+        response = EmailDraftResponse(
             subject_pro=result.get("subject_pro", f"Action Required: {conflict_type}"),
             body_pro=result.get("body_pro", "Please review the attached conflict and respond promptly."),
             subject_urg=result.get("subject_urg", f"URGENT: {conflict_type} — Closing at Risk"),
             body_urg=result.get("body_urg", "Urgent attention required. Please respond immediately."),
         )
+        record_email_draft(job_id, request, db)
+        return response
+    except HTTPException:
+        raise
     except Exception as exc:
         raise HTTPException(502, f"Email draft generation failed: {exc}")
 
@@ -396,6 +410,7 @@ async def run_demo(
     request: Request,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
+    _: str = Depends(verify_api_key),
 ):
     """Run a validation job using the bundled Martinez sample closing package."""
     from pathlib import Path as _Path

@@ -18,6 +18,7 @@ class Base(DeclarativeBase):
 def create_tables() -> None:
     """Import all models so SQLAlchemy registers them, then create tables."""
     from app.models import job, result, rate_limit  # noqa: F401
+    from app.models import email_draft_limit, upload_rate_limit  # noqa: F401
     Base.metadata.create_all(bind=engine)
 
 

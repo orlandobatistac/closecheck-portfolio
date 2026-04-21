@@ -16,9 +16,15 @@ class Settings(BaseSettings):
     max_file_size_mb: int = 25
     max_files_per_job: int = 20
     api_key: str = "dev-key"
+    api_key_required: bool = False  # Set True in production to enforce X-API-Key header
     demo_mode: bool = True
     rate_limit_window_hours: int = 24
     rate_limit_max_files: int = 20
+    # Email draft rate limiting
+    email_draft_limit_per_job: int = 3
+    email_draft_window_hours: int = 24
+    # Per-IP upload cooldown (seconds between consecutive uploads from same IP)
+    upload_rate_limit_seconds: int = 10
 
     model_config = {"env_file": ".env", "case_sensitive": False}
 
