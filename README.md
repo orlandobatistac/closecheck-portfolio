@@ -13,6 +13,8 @@ The product replaces 2–4 hours of manual file review with a 60-second AI audit
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — Detailed system design, data flows, module breakdown
 - **[docs/PRODUCTION_DEPLOY.md](docs/PRODUCTION_DEPLOY.md)** — Production deployment source of truth
 - **[docs/PROJECT.md](docs/PROJECT.md)** — Feature spec + rule matrix
+- **[docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)** — VPS deployment, database migrations, service management
+- **[docs/GITHUB_SETUP.md](docs/GITHUB_SETUP.md)** — GitHub environment variables and secrets configuration
 - **[docs/CLAUDE.md](docs/CLAUDE.md)** — Claude Code / Copilot interaction guidelines
 - **[docs/CLAUDE_CODE_PROMPTS.md](docs/CLAUDE_CODE_PROMPTS.md)** — Step-by-step feature implementation guide
 
@@ -227,12 +229,76 @@ Health check: `{ "status": "ok" }`
 
 ---
 
+## Production Security (P0 Protections)
+
+CloseCheck implements three critical anti-abuse protections in production:
+
+### 1. API Key Authentication
+Every request to the validation API must include a valid `X-API-Key` header.
+
+```bash
+# Missing key → 401 Unauthorized
+curl https://api.closecheck.example/api/v1/validate -F "files=@file.pdf"
+
+# Valid key → 202 Accepted
+curl https://api.closecheck.example/api/v1/validate \
+  -H "X-API-Key: your-secret-key" \
+  -F "files=@file.pdf"
+```
+
+**Configuration:**
+```ini
+API_KEY_REQUIRED=true              # Enable in production
+API_KEY=your-32-char-secret        # Set in environment
+```
+
+### 2. Email Draft Rate Limiting
+Prevents Claude API abuse via email drafting. Limited to **3 drafts per job per 24 hours**.
+
+```
+First 3 draft requests  → 200 OK (draft generated)
+4th request within 24h → 429 Too Many Requests
+After 24h reset        → 200 OK (quota resets)
+```
+
+**Configuration:**
+```ini
+EMAIL_DRAFT_LIMIT_PER_JOB=3        # Max 3 drafts per job
+EMAIL_DRAFT_WINDOW_HOURS=24        # Rolling 24-hour window
+```
+
+### 3. Upload Rate Limiting
+Prevents upload DoS attacks. Limited to **1 upload per 10 seconds per IP**.
+
+```
+First upload                → 202 Accepted
+Second upload within 10s   → 429 Too Many Requests (retry after: 9s)
+Upload after 10s cooldown  → 202 Accepted
+```
+
+**Configuration:**
+```ini
+UPLOAD_RATE_LIMIT_SECONDS=10       # 1 upload per 10 seconds per IP
+```
+
+**Database tables (auto-created on startup):**
+- `email_draft_limits` — Tracks email draft submissions by job/IP
+- `upload_rate_limits` — Tracks upload attempts by IP with automatic cleanup
+
+---
+
 ## Running Tests
 
 ```bash
 make test                              # all tests (mocked, no API key needed)
 make test-fast                         # fast unit + integration only
 make test-e2e                          # end-to-end tests (requires ANTHROPIC_API_KEY + sample docs)
+```
+
+**Protection Tests:**
+```bash
+# 34 comprehensive tests for auth + rate limiting
+python -m pytest tests/unit/test_auth.py tests/unit/test_email_limit.py tests/unit/test_upload_rate_limit.py -v
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for more details on testing and development.
@@ -246,19 +312,51 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for more details on testing and developme
 ANTHROPIC_API_KEY=sk-ant-...       # required
 CLAUDE_MODEL=claude-sonnet-4-6     # optional, this is the default
 DATABASE_URL=sqlite:///./closecheck.db
+
+# File storage
 UPLOAD_DIR=./uploads
 REPORTS_DIR=./reports
 MAX_FILE_SIZE_MB=25
 MAX_FILES_PER_JOB=20
-API_KEY=your-secret-api-key
+
+# ── API Security (P0 Protections) ──
+API_KEY_REQUIRED=false             # true in production, false in dev
+API_KEY=your-secret-api-key        # required in production
+
+# Email draft rate limiting
+EMAIL_DRAFT_LIMIT_PER_JOB=3        # max 3 drafts per job
+EMAIL_DRAFT_WINDOW_HOURS=24        # per 24-hour window
+
+# Upload rate limiting
+UPLOAD_RATE_LIMIT_SECONDS=10       # 1 upload per 10 seconds per IP
 
 # frontend/.env
-VITE_API_BASE_URL=http://localhost:8000
-VITE_API_KEY=your-secret-api-key
+VITE_API_BASE_URL=http://localhost:8000       # development
+VITE_API_KEY=dev-key                          # development only
 ```
+
+---
+
+## Production Deployment
+
+See [docs/PRODUCTION_DEPLOY.md](docs/PRODUCTION_DEPLOY.md) for the authoritative architecture and deployment strategy.
+
+**Quick reference:**
+- **Backend:** VPS with systemd + nginx + Python virtualenv at `/var/www/closecheck-api`
+- **Frontend:** Static hosting (Vercel, Netlify, GitHub Pages, etc.)
+- **Database:** SQLite on VPS with automatic backups
+- **CI/CD:** GitHub Actions for automatic backend + frontend deployment
+- **Setup:** See [docs/GITHUB_SETUP.md](docs/GITHUB_SETUP.md) for environment variables and secrets configuration
 
 ---
 
 ## Portfolio Note
 
 Built in 10 days as a portfolio piece demonstrating AI document intelligence for real estate closing operations. The project showcases hybrid validation (deterministic rules + Claude API for nuanced extraction), async job processing with FastAPI BackgroundTasks, a pixel-faithful React frontend built from a design reference, and a full 42-rule validation engine covering the major document categories in a residential closing package.
+
+**Recent additions:**
+- 3 P0 production protections: API key authentication, email draft rate limiting (3 per job/24h), upload rate limiting (1 per IP/10s)
+- Automatic database table creation via SQLAlchemy ORM
+- Comprehensive test coverage (34 unit + integration tests, all passing)
+- GitHub Actions CI/CD for backend + frontend with environment-scoped secrets
+- Production deployment architecture with systemd service management
