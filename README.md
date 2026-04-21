@@ -11,6 +11,7 @@ The product replaces 2–4 hours of manual file review with a 60-second AI audit
 - **[README.md](README.md)** — Main overview (this file)
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** — Development setup, code style, testing guidelines
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — Detailed system design, data flows, module breakdown
+- **[docs/PRODUCTION_DEPLOY.md](docs/PRODUCTION_DEPLOY.md)** — Production deployment source of truth
 - **[docs/PROJECT.md](docs/PROJECT.md)** — Feature spec + rule matrix
 - **[docs/CLAUDE.md](docs/CLAUDE.md)** — Claude Code / Copilot interaction guidelines
 - **[docs/CLAUDE_CODE_PROMPTS.md](docs/CLAUDE_CODE_PROMPTS.md)** — Step-by-step feature implementation guide
@@ -29,7 +30,7 @@ The product replaces 2–4 hours of manual file review with a 60-second AI audit
 | Frontend | React 18 + Vite + Tailwind CSS | SPA — Upload → Processing → Report |
 | HTTP Client | Axios | Frontend ↔ Backend |
 | Auth | API Key header (MVP) | `X-API-Key` header |
-| Deployment | Docker Compose | Backend + frontend in containers |
+| Deployment | Split production topology | Static frontend hosting + VPS backend via nginx/systemd; Docker Compose for local dev |
 
 ---
 
@@ -84,6 +85,8 @@ The product replaces 2–4 hours of manual file review with a 60-second AI audit
 
 ## Quick Start
 
+This quick start is for local development. Production deployment is defined in [docs/PRODUCTION_DEPLOY.md](docs/PRODUCTION_DEPLOY.md).
+
 ```bash
 git clone <your-repo-url>
 cd closecheck
@@ -95,7 +98,7 @@ cp backend/.env.example backend/.env
 # Configure frontend (optional for Docker — proxy handles routing)
 cp frontend/.env.example frontend/.env
 
-# Launch everything
+# Launch the local development stack
 docker-compose up --build
 
 # Open http://localhost:5173

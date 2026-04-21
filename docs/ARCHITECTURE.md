@@ -283,7 +283,9 @@ Report (pages/Report.jsx)
 
 ## Deployment
 
-### Docker
+Production deployment is defined in [PRODUCTION_DEPLOY.md](PRODUCTION_DEPLOY.md).
+
+### Local Docker Development
 ```bash
 docker-compose up --build
 ```
@@ -291,6 +293,16 @@ Runs:
 - **Backend:** uvicorn on port 8000
 - **Frontend:** Vite + nginx proxy on port 5173
 - Both services share `.env` files via `env_file` in compose config
+
+This setup is for local development and preview-style environments, not the source of truth for production topology.
+
+### Production
+
+- **Frontend:** static hosting on a separate public origin such as `app.<domain>`
+- **Backend:** VPS-hosted FastAPI service on `api.<domain>`
+- **Reverse proxy:** `nginx` terminates TLS and proxies the API domain to a localhost backend port
+- **Process manager:** `systemd` manages the backend service lifecycle
+- **Runtime model:** project-local virtualenv + `uvicorn`, bound to localhost only
 
 ### Local Development
 ```bash
@@ -300,7 +312,7 @@ make dev-frontend   # Terminal 2
 
 ### Environment
 - **Development:** `CLAUDE_MODEL=claude-sonnet-4-6` (default)
-- **Production:** Consider using a more cost-efficient model or caching
+- **Production:** configure real frontend/backend origins, CORS, secrets, and server paths according to [PRODUCTION_DEPLOY.md](PRODUCTION_DEPLOY.md)
 
 ---
 
