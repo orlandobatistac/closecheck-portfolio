@@ -20,15 +20,87 @@ jobs:
           script: |
             set -e
             cd /var/www/closecheck-api
-            echo "Git status before pull:"
+            
+            echo "📦 CloseCheck Backend Deployment"
+            echo "===================================="
+            echo ""
+            
+            echo "1️⃣ Database backup..."
+            cd /var/www/closecheck-api/backend
+            if [ -f closecheck.db ]; then
+              cp closecheck.db closecheck.db.backup.$(date +%Y%m%d-%H%M%S)
+              echo "✓ Backup created"
+            fi
+            cd /var/www/closecheck-api
+            
+            echo ""
+            echo "2️⃣ Git update..."
+            echo "Status before pull:"
             git status -s
-            echo "Forcing update to latest main..."
             git fetch --all
             git reset --hard origin/main
-            echo "Last commit pulled:"
+            echo "Last commit:"
             git log -n 1 --pretty=format:"%h - %s"
-            echo "Updating dependencies..."
+            
+            echo ""
+            echo "3️⃣ Python dependencies..."
             /var/www/closecheck-api/venv/bin/pip install -q -r backend/requirements.txt
-            echo "Restarting service..."
+            echo "✓ Dependencies installed"
+            
+            echo ""
+            echo "4️⃣ Database migrations (create new tables)..."
+            cd /var/www/closecheck-api/backend
+            /var/www/closecheck-api/venv/bin/python << 'PYEOF'
+            from app.db.database import create_tables
+            from sqlalchemy import inspect
+            from app.db.database import engine
+            
+            try:
+              create_tables()
+              inspector = inspect(engine)
+              tables = inspector.get_table_names()
+              
+              if "email_draft_limits" in tables and "upload_rate_limits" in tables:
+                print("✓ Rate-limiting tables created/verified")
+              else:
+                raise Exception("Rate-limiting tables not found!")
+            except Exception as e:
+              print(f"❌ Database migration failed: {e}")
+              exit(1)
+            PYEOF
+            
+            echo ""
+            echo "5️⃣ Import validation..."
+            /var/www/closecheck-api/venv/bin/python << 'PYEOF'
+            try:
+              from app.api.deps.auth import verify_api_key
+              from app.api.deps.email_limit import check_email_draft_limit
+              from app.api.deps.upload_rate_limit import check_upload_rate_limit
+              print("✓ All modules imported successfully")
+            except Exception as e:
+              print(f"❌ Import error: {e}")
+              exit(1)
+            PYEOF
+            
+            echo ""
+            echo "6️⃣ Service restart..."
+            cd /var/www/closecheck-api
             systemctl restart closecheck-api.service
-            echo "✅ Deploy completed successfully"
+            sleep 2
+            
+            if systemctl is-active --quiet closecheck-api.service; then
+              echo "✓ Service is running"
+            else
+              echo "❌ Service failed to start"
+              journalctl -u closecheck-api.service -n 20
+              exit 1
+            fi
+            
+            echo ""
+            echo "✅ Deployment completed successfully"
+            echo ""
+            echo "Summary:"
+            echo "  • Code updated to: $(git log -n 1 --pretty=format:'%h')"
+            echo "  • Service: closecheck-api.service (running)"
+            echo "  • Database tables: email_draft_limits, upload_rate_limits"
+            echo ""
