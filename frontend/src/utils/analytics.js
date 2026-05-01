@@ -1,4 +1,4 @@
-const MEASUREMENT_ID = 'G-RRGJMF97QP'
+const MEASUREMENT_ID = 'G-6E90E9HB58'
 
 let lastTrackedPage = null
 
